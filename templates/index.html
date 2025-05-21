@@ -1,0 +1,210 @@
+
+<!-- index.html modificato per supportare sia il vecchio che il nuovo formato -->
+
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Galleria foto</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        .category-sections {
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+        }
+        
+        .category-section {
+            background-color: #f9f9f9;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+        
+        .category-main-title {
+            color: #750000;
+            font-size: 1.8rem;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        
+        .view-toggle {
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 20px;
+        }
+        
+        .view-btn {
+            background-color: #f0f0f0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 8px 12px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            margin-left: 5px;
+        }
+        
+        .view-btn.active {
+            background-color: #750000;
+            color: white;
+            border-color: #750000;
+        }
+    </style>
+</head>
+<body>
+    
+    <header>
+        <h1>Galleria fotografica</h1>
+        <div class="search-bar">
+            <form action="{{ url_for('ricerca') }}" method="get">
+                <input type="text" name="q" placeholder="Cerca nelle foto..." 
+                       value="{{ request.args.get('q', '') }}">
+                <button type="submit">🔍</button>
+            </form>
+        </div>
+        <nav>
+            {% if session.username %}
+                <span>Benvenuto, {{ session.username }}!</span>
+                <a href="{{ url_for('aggiungi') }}" class="btn">Aggiungi foto</a>
+                <a href="{{ url_for('logout') }}" class="btn">Logout</a>
+                <a href="{{ url_for('ricerca') }}" class="btn">🔍 Ricerca</a>
+                {% if session.ruolo == "admin" or session.permessi == "ALL" or (session.permessi is mapping and session.permessi|selectattr("1", "in", ["aggiungi"])|list|length > 0) %}
+                    <a href="{{ url_for('upload_massivo') }}" class="btn">Upload Massivo</a>
+                {% endif %}
+                {% if session.ruolo == "admin" %}
+                    <a href="{{ url_for('gestione_utenti') }}" class="btn">Gestione utenti</a>
+                {% endif %}
+            {% else %}
+                <a href="{{ url_for('login') }}" class="btn">Login</a>
+                <a href="{{ url_for('ricerca') }}" class="btn">🔍 Ricerca</a>
+            {% endif %}
+        </nav>
+    </header>
+
+
+    <div class="flash-messages">
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="flash">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+    </div>
+
+    <main>
+        {% if not categorie and not categorie_principali %}
+            <div class="empty-gallery">
+                <p>Nessuna foto disponibile.</p>
+                {% if session.username %}
+                    <a href="{{ url_for('aggiungi') }}" class="btn">Aggiungi la prima foto</a>
+                {% endif %}
+            </div>
+        {% else %}
+            <div class="view-toggle">
+                <button id="view-flat" class="view-btn active">Vista semplice</button>
+                <button id="view-hierarchy" class="view-btn">Vista gerarchica</button>
+            </div>
+            
+            <!-- VISTA SEMPLICE (Vecchio formato) -->
+            <div id="flat-view" class="categories">
+                {% for categoria, foto_list in categorie.items() %}
+                    <div class="category-card">
+                        <h2>{{ categoria }}</h2>
+                        <div class="thumbnail">
+                            {% set copertina = foto_list|first %}
+                            <a href="{{ url_for('mostra_categoria', nome=categoria) }}">
+                                <img src="{{ url_for('static', filename=copertina['nome_file']) }}" alt="{{ copertina['titolo'] }}">
+                            </a>
+                        </div>
+                        <div class="category-info">
+                            <p>{{ foto_list|length }} foto</p>
+                            <div class="actions">
+                                <a href="{{ url_for('mostra_categoria', nome=categoria) }}" class="btn">Visualizza</a>
+                                {% if session.username and session.ruolo == 'admin' %}
+                                    <a href="{{ url_for('elimina_categoria', nome=categoria) }}" class="btn delete" onclick="return confirm('Sei sicuro di voler eliminare questa categoria?')">Elimina</a>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+            
+            <!-- VISTA GERARCHICA (Nuovo formato) -->
+            <div id="hierarchy-view" class="category-sections" style="display: none;">
+                {% for cat_princ_nome, cat_princ in categorie_principali.items() %}
+                    <div class="category-section">
+                        <h2 class="category-main-title">{{ cat_princ_nome }}</h2>
+                        
+                        <div class="categories">
+                            {% for subcat_nome, subcat in cat_princ.sottocategorie.items() %}
+                                {% if subcat.foto %}
+                                    <div class="category-card">
+                                        <h3>{{ subcat.nome }}</h3>
+                                        <div class="thumbnail">
+                                            {% set copertina = subcat.foto|first %}
+                                            <a href="{{ url_for('mostra_categoria', nome=subcat.categoria_completa) }}">
+                                                <img src="{{ url_for('static', filename=copertina.nome_file) }}" alt="{{ copertina.titolo }}">
+                                            </a>
+                                        </div>
+                                        <div class="category-info">
+                                            <p>{{ subcat.foto|length }} foto</p>
+                                            <div class="actions">
+                                                <a href="{{ url_for('mostra_categoria', nome=subcat.categoria_completa) }}" class="btn">Visualizza</a>
+                                                {% if session.username and session.ruolo == 'admin' %}
+                                                    <a href="{{ url_for('elimina_categoria', nome=subcat.categoria_completa) }}" class="btn delete" onclick="return confirm('Sei sicuro di voler eliminare questa categoria?')">Elimina</a>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    </main>
+
+    <footer>
+        <p>&copy; 2025 Powered by Fabry FVCG</p>
+    </footer>
+    
+    <script>
+        // Toggle tra le viste
+        document.addEventListener('DOMContentLoaded', function() {
+            const viewFlat = document.getElementById('view-flat');
+            const viewHierarchy = document.getElementById('view-hierarchy');
+            const flatView = document.getElementById('flat-view');
+            const hierarchyView = document.getElementById('hierarchy-view');
+            
+            // Salva la preferenza dell'utente nel localStorage
+            const savedView = localStorage.getItem('galleryView');
+            if (savedView === 'hierarchy') {
+                flatView.style.display = 'none';
+                hierarchyView.style.display = 'flex';
+                viewFlat.classList.remove('active');
+                viewHierarchy.classList.add('active');
+            }
+            
+            viewFlat.addEventListener('click', function() {
+                flatView.style.display = 'grid';
+                hierarchyView.style.display = 'none';
+                viewFlat.classList.add('active');
+                viewHierarchy.classList.remove('active');
+                localStorage.setItem('galleryView', 'flat');
+            });
+            
+            viewHierarchy.addEventListener('click', function() {
+                flatView.style.display = 'none';
+                hierarchyView.style.display = 'flex';
+                viewFlat.classList.remove('active');
+                viewHierarchy.classList.add('active');
+                localStorage.setItem('galleryView', 'hierarchy');
+            });
+        });
+    </script>
+</body>
+</html>

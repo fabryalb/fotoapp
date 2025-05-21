@@ -1,0 +1,6 @@
+username;password;ruolo;permessi
+admin;admin123;admin;ALL
+dona;dona;utente;"{""Bruno"": [""visualizza"", ""modifica"", ""aggiungi"", ""elimina""]}"
+ospite;ospite;visitatore;"{""Maglie Toro"": [""visualizza""],""Bruno"": [""visualizza""], ""TORO"": [""visualizza""], ""Maglie"": [""visualizza""], ""Daniele"": [""visualizza""]}"
+daniele;daniele;utente;"{""Daniele"": [""visualizza"", ""modifica"", ""aggiungi"", ""elimina""], ""Bruno"": [""visualizza""], ""TORO"": [""visualizza""], ""Maglie Toro"": [""visualizza""]}"
+max;max;utente;"{""max"": [""visualizza"", ""modifica"", ""aggiungi"", ""elimina""], ""Bruno"": [""visualizza""], ""TORO"": [""visualizza""], ""Maglie Toro"": [""visualizza""]}"

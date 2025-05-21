@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ foto.titolo }} - Galleria Foto</title>
+    
+    <!-- Meta tags per condivisione (Open Graph) -->
+    <meta property="og:title" content="{{ foto.titolo }}">
+    <meta property="og:description" content="{{ foto.descrizione }}">
+    <meta property="og:image" content="{{ url_for('static', filename=foto.nome_file, _external=True) }}">
+    <meta property="og:url" content="{{ request.url }}">
+    <meta property="og:type" content="website">
+    
+    <!-- Meta tags per Twitter -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="{{ foto.titolo }}">
+    <meta name="twitter:description" content="{{ foto.descrizione }}">
+    <meta name="twitter:image" content="{{ url_for('static', filename=foto.nome_file, _external=True) }}">
+    
+    <!-- Meta tag per dispositivi mobili -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        .photo-page {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .photo-container {
+            margin: 20px 0;
+            text-align: center;
+        }
+        .main-photo {
+            max-width: 100%;
+            max-height: 70vh;
+            box-shadow: 0 3px 15px rgba(0,0,0,0.2);
+            border-radius: 8px;
+        }
+        .photo-details {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .photo-title {
+            color: #750000;
+            font-size: 1.8rem;
+            margin-bottom: 10px;
+        }
+        .photo-desc {
+            font-style: italic;
+            margin-bottom: 15px;
+            color: #444;
+        }
+        .photo-meta {
+            color: #777;
+            font-size: 0.9rem;
+        }
+        .photo-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            margin: 20px 0;
+        }
+        .btn {
+            margin: 5px;
+        }
+        .share-section {
+            margin-top: 30px;
+            background-color: #f5f5f5;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: inset 0 0 5px rgba(0,0,0,0.1);
+        }
+        .share-title {
+            text-align: center;
+            margin-bottom: 15px;
+            color: #333;
+            font-weight: bold;
+        }
+        .save-instructions {
+            background-color: #fff;
+            border-left: 4px solid #750000;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 0 8px 8px 0;
+        }
+        .step {
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+        }
+        .step-number {
+            background-color: #750000;
+            color: white;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 10px;
+            font-weight: bold;
+            font-size: 12px;
+        }
+        .device-buttons {
+            display: flex;
+            gap: 15px;
+            margin-top: 15px;
+            justify-content: center;
+        }
+        .device-button {
+            background-color: #eee;
+            border: 1px solid #ddd;
+            padding: 10px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+        .device-button:hover {
+            background-color: #e0e0e0;
+        }
+        .device-button.active {
+            background-color: #750000;
+            color: white;
+            border-color: #750000;
+        }
+        .qr-container {
+            margin: 20px auto;
+            max-width: 200px;
+            text-align: center;
+        }
+        #qrcode {
+            padding: 10px;
+            background: white;
+            border-radius: 8px;
+            display: inline-block;
+            margin-bottom: 10px;
+        }
+        .qr-text {
+            font-size: 0.9rem;
+            color: #555;
+        }
+        
+        /* Colori e stile dei pulsanti di condivisione */
+        .share-btn {
+            padding: 10px 15px;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            display: inline-block;
+            text-decoration: none;
+            margin: 5px;
+            text-align: center;
+        }
+        .share-btn.whatsapp { background-color: #25D366; }
+        .share-btn.telegram { background-color: #0088cc; }
+        .share-btn.email { background-color: #d44638; }
+        .share-btn.copy { background-color: #607d8b; }
+        .share-btn.download { background-color: #750000; }
+        .share-btn.native { background-color: #3498db; }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Condivisione Foto</h1>
+        <nav>
+            <a href="{{ url_for('mostra_categoria', nome=foto.categoria) }}" class="btn">⬅️ Torna alla categoria</a>
+        </nav>
+    </header>
+
+    <main class="photo-page">
+        <div class="photo-container">
+            <img src="{{ url_for('static', filename=foto.nome_file) }}" alt="{{ foto.titolo }}" class="main-photo" id="mainPhoto">
+        </div>
+        
+        <div class="photo-details">
+            <h2 class="photo-title">{{ foto.titolo }}</h2>
+            <p class="photo-desc">{{ foto.descrizione }}</p>
+            <p class="photo-meta">Data: {{ foto.data }} | Categoria: {{ foto.categoria }}</p>
+        </div>
+        
+        <div class="photo-actions">
+            <a href="{{ url_for('download_image', id_foto=foto.id) }}" class="share-btn download">⬇️ Scarica immagine</a>
+            <a id="whatsappBtn" href="#" class="share-btn whatsapp">📱 WhatsApp</a>
+            <a id="telegramBtn" href="#" class="share-btn telegram">📢 Telegram</a>
+            <a id="emailBtn" href="#" class="share-btn email">📧 Email</a>
+            <a id="copyUrlBtn" href="#" class="share-btn copy">📋 Copia link</a>
+            <a id="nativeShareBtn" class="share-btn native" style="display: none;">📤 Condividi</a>
+        </div>
+        
+        <div class="share-section">
+            <h3 class="share-title">Come condividere questa immagine</h3>
+            
+            <div class="device-buttons">
+                <div class="device-button active" id="mobileBtn">📱 Dispositivo mobile</div>
+                <div class="device-button" id="desktopBtn">💻 Computer</div>
+            </div>
+            
+            <div class="save-instructions" id="mobileInstructions">
+                <h4>Per condividere su mobile:</h4>
+                <div class="step">
+                    <div class="step-number">1</div>
+                    <div>Premi a lungo sull'immagine qui sopra</div>
+                </div>
+                <div class="step">
+                    <div class="step-number">2</div>
+                    <div>Seleziona "Salva immagine" o "Scarica immagine"</div>
+                </div>
+                <div class="step">
+                    <div class="step-number">3</div>
+                    <div>Vai su WhatsApp (o altra app) e seleziona la foto dalla tua galleria</div>
+                </div>
+            </div>
+            
+            <div class="save-instructions" id="desktopInstructions" style="display: none;">
+                <h4>Per condividere da desktop:</h4>
+                <div class="step">
+                    <div class="step-number">1</div>
+                    <div>Clicca con il tasto destro sull'immagine qui sopra</div>
+                </div>
+                <div class="step">
+                    <div class="step-number">2</div>
+                    <div>Seleziona "Salva immagine con nome"</div>
+                </div>
+                <div class="step">
+                    <div class="step-number">3</div>
+                    <div>Apri WhatsApp Web e seleziona la foto dal tuo computer</div>
+                </div>
+            </div>
+            
+            <div class="qr-container">
+                <div id="qrcode"></div>
+                <p class="qr-text">Scansiona per accedere da mobile</p>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <p>&copy; 2025 Powered by Fabry FVCG</p>
+    </footer>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const pageUrl = window.location.href;
+            const imageUrl = document.getElementById('mainPhoto').src;
+            const imageTitle = "{{ foto.titolo }}";
+            const imageDesc = "{{ foto.descrizione }}";
+            const imageDate = "{{ foto.data }}";
+            
+            const whatsappBtn = document.getElementById('whatsappBtn');
+            const telegramBtn = document.getElementById('telegramBtn');
+            const emailBtn = document.getElementById('emailBtn');
+            const copyUrlBtn = document.getElementById('copyUrlBtn');
+            const nativeShareBtn = document.getElementById('nativeShareBtn');
+            const mobileBtn = document.getElementById('mobileBtn');
+            const desktopBtn = document.getElementById('desktopBtn');
+            const mobileInstructions = document.getElementById('mobileInstructions');
+            const desktopInstructions = document.getElementById('desktopInstructions');
+            
+            // Rilevamento dispositivo
+            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+            
+            // Genera il QR code
+            new QRCode(document.getElementById("qrcode"), {
+                text: pageUrl,
+                width: 128,
+                height: 128
+            });
+            
+            // Prepara i testi per la condivisione
+            const shareTitle = imageTitle;
+            const shareText = `${imageTitle}\n\n${imageDesc}\n\nData: ${imageDate}`;
+            
+            // Testo che include il link alla pagina di condivisione
+            const sharePageText = `${imageTitle}\n\n${imageDesc}\n\nData: ${imageDate}\n\nVedi e scarica la foto qui (include QR code e istruzioni): \n${pageUrl}\n`;
+
+            
+            // Imposta i pulsanti di condivisione
+            whatsappBtn.addEventListener('click', function(e) {
+    e.preventDefault();
+    const text = `${imageTitle}\n\n${imageDesc}\n\nData: ${imageDate}`;
+    const link = `\n\nScarica la foto:\n${pageUrl}\n`; 
+    
+    if (isMobile) {
+        // Tentativo 1: Invia tutto insieme
+        window.location.href = `whatsapp://send?text=${encodeURIComponent(text + link)}`;
+        
+        // Fallback: Apre l'APP con solo il link dopo un ritardo
+        setTimeout(() => {
+            window.open(`whatsapp://send?text=${encodeURIComponent(link)}`, '_blank');
+        }, 1000);
+    } else {
+        window.open(`https://web.whatsapp.com/send?text=${encodeURIComponent(text + link)}`, '_blank');
+    }
+});
+            
+            telegramBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                window.open(`https://t.me/share/url?url=${encodeURIComponent(pageUrl)}&text=${encodeURIComponent(shareText)}`, '_blank');
+            });
+            
+            emailBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                window.location.href = `mailto:?subject=${encodeURIComponent(shareTitle)}&body=${encodeURIComponent(sharePageText)}`;
+            });
+            
+            copyUrlBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                navigator.clipboard.writeText(pageUrl)
+                    .then(() => {
+                        alert('Link alla pagina di condivisione copiato negli appunti!');
+                    })
+                    .catch(err => {
+                        console.error('Errore nel copiare il link: ', err);
+                    });
+            });
+            
+            // Web Share API (se supportata)
+            if (navigator.share) {
+                nativeShareBtn.style.display = 'inline-block';
+                nativeShareBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    navigator.share({
+                        title: shareTitle,
+                        text: shareText,
+                        url: pageUrl  // Condivide l'URL della pagina, non l'immagine diretta
+                    }).catch(err => {
+                        console.error('Errore nella condivisione: ', err);
+                    });
+                });
+            }
+            
+            // Toggle istruzioni mobile/desktop
+            mobileBtn.addEventListener('click', function() {
+                mobileBtn.classList.add('active');
+                desktopBtn.classList.remove('active');
+                mobileInstructions.style.display = 'block';
+                desktopInstructions.style.display = 'none';
+            });
+            
+            desktopBtn.addEventListener('click', function() {
+                desktopBtn.classList.add('active');
+                mobileBtn.classList.remove('active');
+                desktopInstructions.style.display = 'block';
+                mobileInstructions.style.display = 'none';
+            });
+            
+            // Funzione per salvare l'immagine (mobile)
+            document.getElementById('mainPhoto').addEventListener('click', function() {
+                if (isMobile) {
+                    // Su mobile, un click potrebbe aprire le opzioni per salvare l'immagine
+                    // (questo è solo un suggerimento visivo, non funzionerà direttamente)
+                    alert('Tieni premuto sull\'immagine per salvarla');
+                }
+            });
+        });
+    </script>
+</body>
+</html>

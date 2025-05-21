@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <title>Gestione Utenti</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<header>
+    <h1>Gestione utenti</h1>
+    <nav>
+        <a href="{{ url_for('index') }}" class="btn">Indietro</a>
+    </nav>
+</header>
+
+<main class="edit-form">
+    {% for utente in utenti %}
+        <section style="margin-bottom: 30px;">
+            <h3>{{ utente.username }} ({{ utente.ruolo }})</h3>
+            {% if utente.permessi == 'ALL' %}
+                <p>Accesso completo (Admin)</p>
+            {% else %}
+                <form method="post" action="{{ url_for('aggiorna_permessi', username=utente.username) }}">
+                    <div class="form-group">
+                        <label for="categoria">Categoria:</label>
+                        <input type="text" name="categoria" placeholder="es. TORO" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="permesso">Permesso:</label>
+                        <select name="permesso">
+                            <option value="visualizza">Visualizza</option>
+                            <option value="modifica">Modifica</option>
+                            <option value="aggiungi">Aggiungi</option>
+                            <option value="elimina">Elimina</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="azione">Azione:</label>
+                        <select name="azione">
+                            <option value="aggiungi">➕ Aggiungi</option>
+                            <option value="rimuovi">➖ Rimuovi</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn">Applica</button>
+                </form>
+            {% endif %}
+        </section>
+    {% endfor %}
+</main>
+
+<footer>
+    <p>&copy; 2025 Gestione Utenti</p>
+</footer>
+</body>
+</html>

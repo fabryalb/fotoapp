@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Condivisione multiple foto - Galleria</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        .multi-photo-page {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .photos-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .photo-preview {
+            width: 100%;
+            height: 150px;
+            object-fit: cover;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            transition: transform 0.3s;
+        }
+        .photo-preview:hover {
+            transform: scale(1.05);
+        }
+        .photo-item {
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            transition: transform 0.3s;
+        }
+        .photo-item:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        .photo-metadata {
+            padding: 12px;
+        }
+        .photo-title {
+            font-weight: bold;
+            color: #750000;
+            margin-bottom: 5px;
+            font-size: 0.95rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .photo-desc {
+            font-size: 0.85rem;
+            color: #555;
+            margin-bottom: 5px;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            height: 32px;
+        }
+        .photo-date {
+            font-size: 0.8rem;
+            color: #777;
+        }
+        .photos-summary {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .photo-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            margin: 20px 0;
+        }
+        .btn {
+            margin: 5px;
+        }
+        .share-section {
+            margin-top: 30px;
+            background-color: #f5f5f5;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: inset 0 0 5px rgba(0,0,0,0.1);
+        }
+        .share-title {
+            text-align: center;
+            margin-bottom: 15px;
+            color: #333;
+            font-weight: bold;
+        }
+        .share-options {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            justify-content: center;
+            margin: 20px 0;
+        }
+        .save-instructions {
+            background-color: #fff;
+            border-left: 4px solid #750000;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 0 8px 8px 0;
+        }
+        .qr-container {
+            margin: 20px auto;
+            max-width: 200px;
+            text-align: center;
+        }
+        #qrcode {
+            padding: 10px;
+            background: white;
+            border-radius: 8px;
+            display: inline-block;
+            margin-bottom: 10px;
+        }
+        .qr-text {
+            font-size: 0.9rem;
+            color: #555;
+        }
+        /* Colori e stile dei pulsanti di condivisione */
+        .share-btn {
+            padding: 10px 15px;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            display: inline-block;
+            text-decoration: none;
+            margin: 5px;
+            text-align: center;
+        }
+        .share-btn.whatsapp { background-color: #25D366; }
+        .share-btn.telegram { background-color: #0088cc; }
+        .share-btn.email { background-color: #d44638; }
+        .share-btn.copy { background-color: #607d8b; }
+        .share-btn.download { background-color: #750000; }
+        .share-btn.native { background-color: #3498db; }
+        .zip-note {
+            background-color: #fffae6;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 0 8px 8px 0;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Condivisione Multiple Foto</h1>
+        <nav>
+            <a href="{{ url_for('index') }}" class="btn">⬅️ Torna alle categorie</a>
+        </nav>
+    </header>
+
+    <main class="multi-photo-page">
+        <div class="photos-summary">
+            <h2>{{ foto_list|length }} foto selezionate</h2>
+            {% if categorie %}
+                <p>Categorie: {{ categorie|join(', ') }}</p>
+            {% endif %}
+        </div>
+        
+        <div class="photos-grid">
+            {% for foto in foto_list %}
+                <div class="photo-item">
+                    <img src="{{ url_for('static', filename=foto['nome_file']) }}" alt="{{ foto['titolo'] }}" class="photo-preview" data-id="{{ foto['id'] }}">
+                    <div class="photo-metadata">
+                        <div class="photo-title">{{ foto['titolo'] }}</div>
+                        <div class="photo-desc">{{ foto['descrizione'] }}</div>
+                        <div class="photo-date">{{ foto['data'] }}</div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+        
+        <div class="photo-actions">
+            <a href="{{ url_for('download_zip', ids=ids) }}" class="share-btn download">⬇️ Scarica tutte le foto (ZIP)</a>
+            <a id="whatsappBtn" href="#" class="share-btn whatsapp">📱 WhatsApp</a>
+            <a id="telegramBtn" href="#" class="share-btn telegram">📢 Telegram</a>
+            <a id="emailBtn" href="#" class="share-btn email">📧 Email</a>
+            <a id="copyUrlBtn" href="#" class="share-btn copy">📋 Copia link</a>
+            <a id="nativeShareBtn" class="share-btn native" style="display: none;">📤 Condividi</a>
+        </div>
+        
+        <div class="zip-note">
+            <h3>Nota sulla condivisione di più immagini</h3>
+            <p>Quando condividi questo link, sarà possibile vedere e scaricare tutte le {{ foto_list|length }} foto selezionate. Per maggiore praticità, è disponibile anche un'opzione per scaricare tutte le immagini come archivio ZIP.</p>
+            <p>Le app di messaggistica come WhatsApp potrebbero limitare il numero di foto che possono essere condivise contemporaneamente. In questo caso, il link che stai condividendo permette di accedere a tutte le immagini.</p>
+        </div>
+        
+        <div class="qr-container">
+            <div id="qrcode"></div>
+            <p class="qr-text">Scansiona per accedere da mobile</p>
+        </div>
+    </main>
+
+    <footer>
+        <p>&copy; 2025 Powered by Fabry FVCG</p>
+    </footer>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const pageUrl = window.location.href;
+            const photoCount = {{ foto_list|length }};
+            
+            const whatsappBtn = document.getElementById('whatsappBtn');
+            const telegramBtn = document.getElementById('telegramBtn');
+            const emailBtn = document.getElementById('emailBtn');
+            const copyUrlBtn = document.getElementById('copyUrlBtn');
+            const nativeShareBtn = document.getElementById('nativeShareBtn');
+            
+            // Rilevamento dispositivo
+            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+            
+            // Aggiungi visualizzazione dettagliata per le foto
+            document.querySelectorAll('.photo-preview').forEach(img => {
+                img.addEventListener('click', function() {
+                    showPhotoDetail(this);
+                });
+            });
+            
+            // Funzione per mostrare i dettagli delle foto
+            function showPhotoDetail(img) {
+                // Crea un overlay per mostrare la foto in grande
+                const overlay = document.createElement('div');
+                overlay.className = 'photo-detail-overlay';
+                overlay.style.position = 'fixed';
+                overlay.style.top = '0';
+                overlay.style.left = '0';
+                overlay.style.width = '100%';
+                overlay.style.height = '100%';
+                overlay.style.backgroundColor = 'rgba(0,0,0,0.9)';
+                overlay.style.display = 'flex';
+                overlay.style.flexDirection = 'column';
+                overlay.style.alignItems = 'center';
+                overlay.style.justifyContent = 'center';
+                overlay.style.zIndex = '1000';
+                
+                // Crea il contenuto
+                const content = document.createElement('div');
+                content.style.position = 'relative';
+                content.style.maxWidth = '90%';
+                content.style.maxHeight = '90%';
+                content.style.display = 'flex';
+                content.style.flexDirection = 'column';
+                content.style.alignItems = 'center';
+                
+                // Ottieni il parent element per prendere i metadati
+                const photoItem = img.closest('.photo-item');
+                const title = photoItem.querySelector('.photo-title').innerText;
+                const desc = photoItem.querySelector('.photo-desc').innerText;
+                const date = photoItem.querySelector('.photo-date').innerText;
+                
+                // Crea l'immagine grande
+                const largeImg = document.createElement('img');
+                largeImg.src = img.src;
+                largeImg.alt = img.alt;
+                largeImg.style.maxWidth = '100%';
+                largeImg.style.maxHeight = '80vh';
+                largeImg.style.objectFit = 'contain';
+                largeImg.style.borderRadius = '8px';
+                largeImg.style.boxShadow = '0 0 20px rgba(0,0,0,0.5)';
+                
+                // Crea i metadati
+                const metadata = document.createElement('div');
+                metadata.style.backgroundColor = 'white';
+                metadata.style.padding = '15px 20px';
+                metadata.style.margin = '15px 0';
+                metadata.style.borderRadius = '8px';
+                metadata.style.maxWidth = '100%';
+                metadata.style.textAlign = 'center';
+                metadata.innerHTML = `
+                    <div style="font-weight: bold; color: #750000; margin-bottom: 5px;">${title}</div>
+                    <div style="font-style: italic; margin-bottom: 5px;">${desc}</div>
+                    <div style="color: #777; font-size: 0.9rem;">${date}</div>
+                `;
+                
+                // Crea il pulsante di chiusura
+                const closeBtn = document.createElement('span');
+                closeBtn.innerHTML = '&times;';
+                closeBtn.style.position = 'absolute';
+                closeBtn.style.top = '-40px';
+                closeBtn.style.right = '-40px';
+                closeBtn.style.color = 'white';
+                closeBtn.style.fontSize = '40px';
+                closeBtn.style.cursor = 'pointer';
+                closeBtn.onclick = function() {
+                    document.body.removeChild(overlay);
+                };
+                
+                // Assembla il tutto
+                content.appendChild(closeBtn);
+                content.appendChild(largeImg);
+                content.appendChild(metadata);
+                overlay.appendChild(content);
+                
+                // Aggiungi la funzione di chiusura cliccando all'esterno
+                overlay.addEventListener('click', function(e) {
+                    if (e.target === overlay) {
+                        document.body.removeChild(overlay);
+                    }
+                });
+                
+                // Aggiungi al body
+                document.body.appendChild(overlay);
+            }
+            
+            // Genera il QR code
+            new QRCode(document.getElementById("qrcode"), {
+                text: pageUrl,
+                width: 128,
+                height: 128
+            });
+            
+            // Prepara i testi per la condivisione
+            const shareTitle = "Condivisione di " + photoCount + " foto";
+            const shareText = `Ecco ${photoCount} foto dalla galleria.`;
+            
+            // Testo che include il link alla pagina di condivisione con i metadati
+            const sharePageText = `Ecco ${photoCount} foto dalla galleria.\n\nDettagli foto:
+{% for foto in foto_list %}
+- {{ foto['titolo'] }}{% if foto['descrizione'] %}: {{ foto['descrizione'] }}{% endif %} ({{ foto['data'] }})
+{% endfor %}
+
+Visualizza e scarica tutte le foto qui:
+
+${pageUrl}`;
+            
+            // Imposta i pulsanti di condivisione
+            whatsappBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                if (isMobile) {
+                    window.location.href = `whatsapp://send?text=${encodeURIComponent(sharePageText)}`;
+                } else {
+                    window.open(`https://wa.me/?text=${encodeURIComponent(sharePageText)}`, '_blank');
+                }
+            });
+            
+            telegramBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                window.open(`https://t.me/share/url?url=${encodeURIComponent(pageUrl)}&text=${encodeURIComponent(shareText)}`, '_blank');
+            });
+            
+            emailBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                window.location.href = `mailto:?subject=${encodeURIComponent(shareTitle)}&body=${encodeURIComponent(sharePageText)}`;
+            });
+            
+            copyUrlBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                navigator.clipboard.writeText(pageUrl)
+                    .then(() => {
+                        alert('Link alla pagina di condivisione copiato negli appunti!');
+                    })
+                    .catch(err => {
+                        console.error('Errore nel copiare il link: ', err);
+                    });
+            });
+            
+            // Web Share API (se supportata)
+            if (navigator.share) {
+                nativeShareBtn.style.display = 'inline-block';
+                nativeShareBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    navigator.share({
+                        title: shareTitle,
+                        text: shareText,
+                        url: pageUrl
+                    }).catch(err => {
+                        console.error('Errore nella condivisione: ', err);
+                    });
+                });
+            }
+        });
+    </script>
+</body>
+</html>

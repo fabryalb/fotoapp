@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aggiungi foto - Galleria</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+
+<style>
+    .category-selection-tabs {
+        background-color: #f9f9f9;
+        border-radius: 5px;
+        overflow: hidden;
+        margin-bottom: 15px;
+    }
+    .tab-buttons {
+        display: flex;
+        background-color: #eee;
+        border-bottom: 1px solid #ddd;
+    }
+    .tab-btn {
+        flex: 1;
+        padding: 10px;
+        background: none;
+        border: none;
+        cursor: pointer;
+        font-size: 0.9rem;
+        transition: all 0.2s;
+    }
+    .tab-btn:hover {
+        background-color: #e0e0e0;
+    }
+    .tab-btn.active {
+        background-color: #750000;
+        color: white;
+    }
+    .tab-content {
+        display: none;
+        padding: 15px;
+    }
+    .tab-content.active {
+        display: block;
+    }
+    .form-row {
+        display: flex;
+        gap: 15px;
+        margin-bottom: 15px;
+    }
+    .form-column {
+        flex: 1;
+    }
+    .full-width {
+        width: 100%;
+        padding: 8px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+    }
+</style>
+
+</head>
+<body>
+    <header>
+        <h1>Aggiungi nuove foto</h1>
+        <nav>
+            <a href="{{ url_for('index') }}" class="btn">Indietro</a>
+        </nav>
+    </header>
+
+    <div class="flash-messages">
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="flash">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+    </div>
+
+    <main class="upload-form">
+        <form method="post" enctype="multipart/form-data">
+            <div class="form-group">
+                <label for="titolo">Titolo:</label>
+                <input type="text" id="titolo" name="titolo" placeholder="Titolo delle foto">
+            </div>
+
+            <div class="form-group">
+                <label for="descrizione">Descrizione:</label>
+                <textarea id="descrizione" name="descrizione" placeholder="Descrizione delle foto"></textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="data">Data:</label>
+                <input type="date" id="data" name="data" value="{{ oggi }}">
+            </div>
+
+            
+<div class="form-group">
+    <label>Categoria:</label>
+    
+    <div class="category-selection-tabs">
+        <div class="tab-buttons">
+            <button type="button" class="tab-btn active" data-tab="tab-esistente">Categoria esistente</button>
+            <button type="button" class="tab-btn" data-tab="tab-nuova-principale">Nuova categoria principale</button>
+            <button type="button" class="tab-btn" data-tab="tab-nuova-sotto">Nuova sottocategoria</button>
+        </div>
+        
+        <!-- Tab: Categoria esistente -->
+        <div class="tab-content active" id="tab-esistente">
+            <input type="hidden" name="tipo_categoria" value="esistente">
+            
+            <label for="categoria_esistente">Seleziona una categoria:</label>
+            <select id="categoria_esistente" name="categoria_esistente" class="full-width">
+                <option value="">-- Seleziona una categoria --</option>
+                {% for cat_princ, sottocategorie in struttura_categorie.items() %}
+                    <optgroup label="{{ cat_princ }}">
+                        <option value="{{ cat_princ }}">{{ cat_princ }} (principale)</option>
+                        {% for subcat in sottocategorie %}
+                            <option value="{{ cat_princ }}/{{ subcat }}">{{ cat_princ }} / {{ subcat }}</option>
+                        {% endfor %}
+                    </optgroup>
+                {% endfor %}
+            </select>
+        </div>
+        
+        <!-- Tab: Nuova categoria principale -->
+        <div class="tab-content" id="tab-nuova-principale">
+            <input type="hidden" name="tipo_categoria" value="nuova_principale" disabled>
+            
+            <label for="nuova_categoria_principale">Nome nuova categoria principale:</label>
+            <input type="text" id="nuova_categoria_principale" name="nuova_categoria_principale" placeholder="Es. Eventi, Viaggi, Persone" class="full-width" disabled>
+        </div>
+        
+        <!-- Tab: Nuova sottocategoria -->
+        <div class="tab-content" id="tab-nuova-sotto">
+            <input type="hidden" name="tipo_categoria" value="nuova_sotto" disabled>
+            
+            <div class="form-row">
+                <div class="form-column">
+                    <label for="categoria_principale">Categoria principale:</label>
+                    <select id="categoria_principale" name="categoria_principale" class="full-width" disabled>
+                        <option value="">-- Seleziona --</option>
+                        {% for cat_princ in categorie_principali %}
+                            <option value="{{ cat_princ }}">{{ cat_princ }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="form-column">
+                    <label for="tipo_separatore">Separatore:</label>
+                    <select id="tipo_separatore" name="tipo_separatore" class="full-width" disabled>
+                        <option value="/">/ (slash)</option>
+                        <option value=">">&#62; (maggiore)</option>
+                    </select>
+                </div>
+            </div>
+            
+            <label for="nuova_sottocategoria">Nome nuova sottocategoria:</label>
+            <input type="text" id="nuova_sottocategoria" name="nuova_sottocategoria" placeholder="Es. Estate2025, TORO, Compleanno" class="full-width" disabled>
+        </div>
+    </div>
+</div>
+
+                <div class="category-selection">
+                    <div class="select-category">
+                        <label for="categoria_menu">Seleziona categoria esistente:</label>
+                        <select id="categoria_menu" name="categoria_menu">
+                            <option value="">-- Seleziona --</option>
+                            {% for categoria in categorie %}
+                                <option value="{{ categoria }}">{{ categoria }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="new-category">
+                        <label for="nuova_categoria">oppure crea nuova categoria:</label>
+                        <input type="text" id="nuova_categoria" name="nuova_categoria" placeholder="Nome nuova categoria">
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="file">Seleziona foto:</label>
+                <input type="file" id="file" name="file[]" multiple accept="image/*">
+                <div class="preview-container" id="preview"></div>
+            </div>
+
+            <div class="form-group">
+                <button type="submit" class="btn">Carica foto</button>
+            </div>
+        </form>
+    </main>
+
+    <footer>
+        <p>&copy; 2025 Powerded by Fabry FVCG</p>
+    </footer>
+
+    <script>
+        // Anteprima delle immagini selezionate
+        document.getElementById('file').addEventListener('change', function(e) {
+            const preview = document.getElementById('preview');
+            preview.innerHTML = '';
+            
+            for (const file of this.files) {
+                if (file.type.startsWith('image/')) {
+                    const img = document.createElement('img');
+                    img.classList.add('preview-image');
+                    img.file = file;
+                    preview.appendChild(img);
+                    
+                    const reader = new FileReader();
+                    reader.onload = (function(aImg) { 
+                        return function(e) { 
+                            aImg.src = e.target.result; 
+                        }; 
+                    })(img);
+                    reader.readAsDataURL(file);
+                }
+            }
+        });
+    </script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const tabButtons = document.querySelectorAll('.tab-btn');
+        const tabContents = document.querySelectorAll('.tab-content');
+        
+        tabButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                tabButtons.forEach(btn => btn.classList.remove('active'));
+                tabContents.forEach(content => {
+                    content.classList.remove('active');
+                    content.querySelectorAll('input, select').forEach(field => {
+                        field.disabled = true;
+                    });
+                });
+
+                this.classList.add('active');
+                const tabId = this.getAttribute('data-tab');
+                const activeContent = document.getElementById(tabId);
+                activeContent.classList.add('active');
+                activeContent.querySelectorAll('input, select').forEach(field => {
+                    if (field.hasAttribute('disabled')) { field.removeAttribute('disabled'); }
+                });
+            });
+        });
+    });
+</script>
+</body>
+</html>

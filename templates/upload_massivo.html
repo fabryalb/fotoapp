@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload Massivo</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <header>
+        <h1>Upload Massivo</h1>
+        <nav>
+            <a href="{{ url_for('index') }}" class="btn">⬅️ Torna alla home</a>
+        </nav>
+    </header>
+
+    <main class="upload-form">
+        {% if categorie %}
+        <form method="post" enctype="multipart/form-data">
+            <div class="form-group">
+                <label for="categoria">Categoria:</label>
+                <select id="categoria" name="categoria" required>
+                    {% for categoria in categorie %}
+                        <option value="{{ categoria }}">{{ categoria }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="titolo">Titolo (uguale per tutte):</label>
+                <input type="text" id="titolo" name="titolo" placeholder="Titolo comune (opzionale)">
+            </div>
+
+            <div class="form-group">
+                <label for="descrizione">Descrizione (uguale per tutte):</label>
+                <textarea id="descrizione" name="descrizione" placeholder="Descrizione comune (opzionale)"></textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="data">Data (uguale per tutte):</label>
+                <input type="date" id="data" name="data" value="{{ oggi }}">
+            </div>
+
+            <div class="form-group">
+                <label for="file">Seleziona le foto da caricare:</label>
+                <input type="file" id="file" name="file[]" multiple accept="image/*" required>
+                <div class="preview-container" id="preview"></div>
+            </div>
+
+            <div class="form-group">
+                <button type="submit" class="btn">Carica tutte</button>
+            </div>
+        </form>
+        {% else %}
+            <p>⚠️ Nessuna categoria disponibile. Aggiungine una prima di procedere.</p>
+        {% endif %}
+    </main>
+
+    <script>
+        document.getElementById('file').addEventListener('change', function(e) {
+            const preview = document.getElementById('preview');
+            preview.innerHTML = '';
+            for (const file of this.files) {
+                if (file.type.startsWith('image/')) {
+                    const img = document.createElement('img');
+                    img.classList.add('preview-image');
+                    img.file = file;
+                    preview.appendChild(img);
+                    const reader = new FileReader();
+                    reader.onload = (function(aImg) {
+                        return function(e) { aImg.src = e.target.result; };
+                    })(img);
+                    reader.readAsDataURL(file);
+                }
+            }
+        });
+    </script>
+
+    <footer>
+        <p>&copy; 2025 Galleria Fotografica</p>
+    </footer>
+</body>
+</html>

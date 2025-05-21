@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Condivisione Foto con Metadati</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/exif-js/2.3.0/exif.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+            color: #333;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+        }
+        .upload-section {
+            margin: 20px 0;
+            text-align: center;
+        }
+        .file-input {
+            display: none;
+        }
+        .upload-btn {
+            background-color: #3498db;
+            padding: 10px 20px;
+            color: white;
+            border-radius: 5px;
+            cursor: pointer;
+            display: inline-block;
+            transition: background-color 0.3s;
+        }
+        .upload-btn:hover {
+            background-color: #2980b9;
+        }
+        .image-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin: 20px 0;
+        }
+        .image-item {
+            width: 45%;
+            margin-bottom: 20px;
+            border: 1px solid #ddd;
+            padding: 10px;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+        }
+        .image-preview {
+            width: 100%;
+            height: auto;
+            border-radius: 5px;
+            margin-bottom: 10px;
+        }
+        .metadata {
+            font-size: 14px;
+            max-height: 200px;
+            overflow-y: auto;
+            padding: 10px;
+            background-color: #f1f1f1;
+            border-radius: 5px;
+        }
+        .metadata-item {
+            margin-bottom: 5px;
+        }
+        .share-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .share-btn {
+            padding: 5px 10px;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .share-email {
+            background-color: #d44638;
+        }
+        .share-whatsapp {
+            background-color: #25D366;
+        }
+        .no-images {
+            text-align: center;
+            padding: 20px;
+            color: #777;
+        }
+        .loading {
+            text-align: center;
+            padding: 20px;
+            font-style: italic;
+            color: #777;
+        }
+        .share-native {
+            background-color: #3498db;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Condivisione Foto con Metadati</h1>
+        
+        <!-- upload disabilitato -->
+<!--
+            <label for="fileInput" class="upload-btn">
+                Seleziona foto
+            </label>
+            <input type="file" id="fileInput" class="file-input" accept="image/*" multiple>
+        </div>
+        
+        -->
+<div id="loadingMessage" class="loading" style="display: none;">
+            Caricamento e analisi delle immagini...
+        </div>
+
+        <div class="image-container">
+            <div class="image-item">
+                <img class="image-preview" src="{{ url_for('static', filename=foto['nome_file']) }}" alt="{{ foto['titolo'] }}">
+                <div class="metadata">
+                    <div class="metadata-item"><strong>Titolo:</strong> {{ foto['titolo'] }}</div>
+                    <div class="metadata-item"><strong>Descrizione:</strong> {{ foto['descrizione'] }}</div>
+                    <div class="metadata-item"><strong>Data:</strong> {{ foto['data'] }}</div>
+                    <div class="metadata-item"><strong>Categoria:</strong> {{ foto['categoria'] }}</div>
+                </div>
+                <div class="share-buttons">
+                    <a class="share-btn share-email" href="mailto:?subject={{ foto['titolo'] | urlencode }}&body={{ ('Titolo: ' ~ foto['titolo'] ~ '\nDescrizione: ' ~ foto['descrizione'] ~ '\nData: ' ~ foto['data'] ~ '\nImmagine: http://136.144.220.169:5000/static/' ~ foto['nome_file']) | urlencode }}">Condividi via Email</a>
+                    <a class="share-btn share-whatsapp" target="_blank" href="https://wa.me/?text={{ ('Titolo: ' ~ foto['titolo'] ~ '%0ADescrizione: ' ~ foto['descrizione'] ~ '%0AData: ' ~ foto['data'] ~ '%0AImmagine: http://136.144.220.169:5000/static/' ~ foto['nome_file']) | urlencode }}">Condividi via WhatsApp</a>
+                </div>
+            </div>
+        </div>
+            <div class="no-images">
+                Nessuna immagine selezionata. Seleziona una o più foto per visualizzare i metadati.
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const fileInput = document.getElementById('fileInput');
+            const imageList = document.getElementById('imageList');
+            const loadingMessage = document.getElementById('loadingMessage');
+            const images = [];
+
+            fileInput.addEventListener('change', handleFileSelect);
+
+            function handleFileSelect(event) {
+                const files = event.target.files;
+                
+                if (files.length === 0) return;
+                
+                // Clear previous images
+                imageList.innerHTML = '';
+                images.length = 0;
+                
+                loadingMessage.style.display = 'block';
+                
+                let processedCount = 0;
+                
+                for (let i = 0; i < files.length; i++) {
+                    const file = files[i];
+                    
+                    if (!file.type.startsWith('image/')) continue;
+                    
+                    const reader = new FileReader();
+                    
+                    reader.onload = function(e) {
+                        const imageObj = {
+                            name: file.name,
+                            type: file.type,
+                            size: formatFileSize(file.size),
+                            dataUrl: e.target.result,
+                            metadata: {}
+                        };
+                        
+                        // Create an image element to get dimensions
+                        const img = new Image();
+                        img.onload = function() {
+                            imageObj.metadata.width = img.width;
+                            imageObj.metadata.height = img.height;
+                            
+                            // Get EXIF data
+                            EXIF.getData(img, function() {
+                                const exifData = EXIF.getAllTags(this);
+                                
+                                if (exifData) {
+                                    // Add important EXIF data to metadata
+                                    if (exifData.Make) imageObj.metadata.make = exifData.Make;
+                                    if (exifData.Model) imageObj.metadata.model = exifData.Model;
+                                    if (exifData.DateTime) imageObj.metadata.dateTime = exifData.DateTime;
+                                    if (exifData.ExposureTime) imageObj.metadata.exposureTime = exifData.ExposureTime;
+                                    if (exifData.FNumber) imageObj.metadata.fNumber = "f/" + exifData.FNumber;
+                                    if (exifData.ISOSpeedRatings) imageObj.metadata.iso = exifData.ISOSpeedRatings;
+                                    if (exifData.GPSLatitude) {
+                                        const lat = convertDMSToDD(exifData.GPSLatitude, exifData.GPSLatitudeRef);
+                                        const lng = convertDMSToDD(exifData.GPSLongitude, exifData.GPSLongitudeRef);
+                                        imageObj.metadata.gpsLocation = `${lat}, ${lng}`;
+                                        imageObj.metadata.gpsLatitude = lat;
+                                        imageObj.metadata.gpsLongitude = lng;
+                                    }
+                                }
+                                
+                                images.push(imageObj);
+                                processedCount++;
+                                
+                                if (processedCount === files.length) {
+                                    renderImages();
+                                    loadingMessage.style.display = 'none';
+                                }
+                            });
+                        };
+                        img.src = e.target.result;
+                    };
+                    
+                    reader.readAsDataURL(file);
+                }
+            }
+
+            function renderImages() {
+                if (images.length === 0) {
+                    imageList.innerHTML = `
+                        <div class="no-images">
+                            Nessuna immagine selezionata. Seleziona una o più foto per visualizzare i metadati.
+                        </div>
+                    `;
+                    return;
+                }
+                
+                imageList.innerHTML = '';
+                
+                images.forEach((image, index) => {
+                    const imageItem = document.createElement('div');
+                    imageItem.className = 'image-item';
+                    
+                    // Create image preview
+                    const preview = document.createElement('img');
+                    preview.className = 'image-preview';
+                    preview.src = image.dataUrl;
+                    preview.alt = image.name;
+                    
+                    // Create metadata display
+                    const metadata = document.createElement('div');
+                    metadata.className = 'metadata';
+                    
+                    // Basic file info
+                    let metadataHTML = `
+                        <div class="metadata-item"><strong>Nome:</strong> ${image.name}</div>
+                        <div class="metadata-item"><strong>Tipo:</strong> ${image.type}</div>
+                        <div class="metadata-item"><strong>Dimensione:</strong> ${image.size}</div>
+                        <div class="metadata-item"><strong>Dimensioni:</strong> ${image.metadata.width}x${image.metadata.height}px</div>
+                    `;
+                    
+                    // EXIF metadata
+                    if (image.metadata.make) metadataHTML += `<div class="metadata-item"><strong>Marca:</strong> ${image.metadata.make}</div>`;
+                    if (image.metadata.model) metadataHTML += `<div class="metadata-item"><strong>Modello:</strong> ${image.metadata.model}</div>`;
+                    if (image.metadata.dateTime) metadataHTML += `<div class="metadata-item"><strong>Data/Ora:</strong> ${image.metadata.dateTime}</div>`;
+                    if (image.metadata.exposureTime) metadataHTML += `<div class="metadata-item"><strong>Tempo Esp.:</strong> ${image.metadata.exposureTime}s</div>`;
+                    if (image.metadata.fNumber) metadataHTML += `<div class="metadata-item"><strong>Apertura:</strong> ${image.metadata.fNumber}</div>`;
+                    if (image.metadata.iso) metadataHTML += `<div class="metadata-item"><strong>ISO:</strong> ${image.metadata.iso}</div>`;
+                    if (image.metadata.gpsLocation) {
+                        metadataHTML += `
+                            <div class="metadata-item"><strong>GPS:</strong> ${image.metadata.gpsLocation}</div>
+                            <div class="metadata-item"><a href="https://www.google.com/maps?q=${image.metadata.gpsLatitude},${image.metadata.gpsLongitude}" target="_blank">Vedi su Google Maps</a></div>
+                        `;
+                    }
+                    
+                    metadata.innerHTML = metadataHTML;
+                    
+                    // Share buttons
+                    const shareButtons = document.createElement('div');
+                    shareButtons.className = 'share-buttons';
+                    
+                    // Email sharing
+                    const emailBtn = document.createElement('button');
+                    emailBtn.className = 'share-btn share-email';
+                    emailBtn.textContent = 'Condividi via Email';
+                    emailBtn.addEventListener('click', () => shareViaEmail(image));
+                    
+                    // WhatsApp sharing
+                    const whatsappBtn = document.createElement('button');
+                    whatsappBtn.className = 'share-btn share-whatsapp';
+                    whatsappBtn.textContent = 'Condividi via WhatsApp';
+                    whatsappBtn.addEventListener('click', () => shareViaWhatsApp(image));
+                    
+                    // Native sharing if available
+                    if (navigator.share) {
+                        const nativeShareBtn = document.createElement('button');
+                        nativeShareBtn.className = 'share-btn share-native';
+                        nativeShareBtn.textContent = 'Condivisione Nativa';
+                        nativeShareBtn.addEventListener('click', () => shareNative(image));
+                        shareButtons.appendChild(nativeShareBtn);
+                    }
+                    
+                    shareButtons.appendChild(emailBtn);
+                    shareButtons.appendChild(whatsappBtn);
+                    
+                    // Add everything to the image item
+                    imageItem.appendChild(preview);
+                    imageItem.appendChild(metadata);
+                    imageItem.appendChild(shareButtons);
+                    
+                    imageList.appendChild(imageItem);
+                });
+            }
+
+            // Funzione per convertire Data URL a File
+            function dataURLtoFile(dataurl, filename) {
+                var arr = dataurl.split(','), 
+                    mime = arr[0].match(/:(.*?);/)[1],
+                    bstr = atob(arr[1]), 
+                    n = bstr.length, 
+                    u8arr = new Uint8Array(n);
+                
+                while(n--) {
+                    u8arr[n] = bstr.charCodeAt(n);
+                }
+                return new File([u8arr], filename, {type: mime});
+            }
+
+            function createMetadataText(image) {
+                let text = `Dettagli dell'immagine "${image.name}":\n\n`;
+                text += `Dimensione file: ${image.size}\n`;
+                text += `Dimensioni immagine: ${image.metadata.width}x${image.metadata.height}px\n`;
+                if (image.metadata.make) text += `Dispositivo: ${image.metadata.make} ${image.metadata.model || ''}\n`;
+                if (image.metadata.dateTime) text += `Data/Ora: ${image.metadata.dateTime}\n`;
+                if (image.metadata.exposureTime) text += `Tempo Esposizione: ${image.metadata.exposureTime}s\n`;
+                if (image.metadata.fNumber) text += `Apertura: ${image.metadata.fNumber}\n`;
+                if (image.metadata.iso) text += `ISO: ${image.metadata.iso}\n`;
+                if (image.metadata.gpsLocation) {
+                    text += `Posizione GPS: ${image.metadata.gpsLocation}\n`;
+                    text += `Link Google Maps: https://www.google.com/maps?q=${image.metadata.gpsLatitude},${image.metadata.gpsLongitude}\n`;
+                }
+                return text;
+            }
+
+            // Funzione di condivisione nativa (Web Share API)
+            function shareNative(image) {
+                const file = dataURLtoFile(image.dataUrl, image.name);
+                navigator.share({
+                    title: `Condivisione foto: ${image.name}`,
+                    text: createMetadataText(image),
+                    files: [file]
+                }).catch(error => console.error('Errore nella condivisione:', error));
+            }
+
+            function shareViaEmail(image) {
+                if (navigator.share) {
+                    const file = dataURLtoFile(image.dataUrl, image.name);
+                    navigator.share({
+                        title: `Condivisione foto: ${image.name}`,
+                        text: createMetadataText(image),
+                        files: [file]
+                    }).catch(error => {
+                        console.error('Errore nella condivisione:', error);
+                        // Fallback alla condivisione email tradizionale
+                        fallbackEmailShare(image);
+                    });
+                } else {
+                    fallbackEmailShare(image);
+                }
+            }
+
+            function fallbackEmailShare(image) {
+                let subject = `Condivisione foto: ${image.name}`;
+                let body = createMetadataText(image);
+                window.location.href = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+            }
+
+            function shareViaWhatsApp(image) {
+                if (navigator.share) {
+                    const file = dataURLtoFile(image.dataUrl, image.name);
+                    navigator.share({
+                        title: image.name,
+                        text: createMetadataText(image),
+                        files: [file]
+                    }).catch(error => {
+                        console.error('Errore nella condivisione:', error);
+                        // Fallback alla condivisione WhatsApp tradizionale
+                        fallbackWhatsAppShare(image);
+                    });
+                } else {
+                    fallbackWhatsAppShare(image);
+                }
+            }
+
+            function fallbackWhatsAppShare(image) {
+                let text = createMetadataText(image);
+                const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+                
+                if (isMobile) {
+                    // Use whatsapp:// protocol for mobile devices
+                    window.location.href = `whatsapp://send?text=${encodeURIComponent(text)}`;
+                } else {
+                    // Use web version for desktop
+                    window.open(`https://web.whatsapp.com/send?text=${encodeURIComponent(text)}`, '_blank');
+                }
+            }
+
+            function formatFileSize(bytes) {
+                if (bytes < 1024) return bytes + ' bytes';
+                else if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+                else return (bytes / 1048576).toFixed(1) + ' MB';
+            }
+
+            function convertDMSToDD(dmsArray, ref) {
+                if (!dmsArray || dmsArray.length < 3) return null;
+                
+                let degrees = dmsArray[0];
+                let minutes = dmsArray[1];
+                let seconds = dmsArray[2];
+                
+                let dd = degrees + (minutes / 60) + (seconds / 3600);
+                
+                // If ref is S or W, negate the value
+                if (ref === 'S' || ref === 'W') dd = -dd;
+                
+                return dd.toFixed(6);
+            }
+        });
+    </script>
+</body>
+</html>

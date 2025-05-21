@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ricerca Foto - Galleria</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        .search-container {
+            max-width: 600px;
+            margin: 20px auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .search-box {
+            display: flex;
+            margin-bottom: 20px;
+        }
+        .search-input {
+            flex: 1;
+            padding: 10px 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px 0 0 4px;
+            font-size: 16px;
+        }
+        .search-button {
+            background: #750000;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 0 4px 4px 0;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .search-results {
+            margin-top: 30px;
+        }
+        .result-count {
+            margin-bottom: 20px;
+            font-weight: bold;
+            color: #333;
+        }
+        .advanced-search {
+            margin-top: 20px;
+            text-align: center;
+        }
+        .advanced-link {
+            color: #666;
+            font-size: 14px;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        .advanced-link:hover {
+            text-decoration: underline;
+        }
+        .advanced-options {
+            display: none;
+            margin-top: 15px;
+            padding: 15px;
+            background: #f8f8f8;
+            border-radius: 4px;
+        }
+        .advanced-options.show {
+            display: block;
+        }
+        .form-row {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        .form-group {
+            flex: 1;
+        }
+        .suggestions-container {
+            position: absolute;
+            width: 100%;
+            max-height: 200px;
+            overflow-y: auto;
+            background: white;
+            border: 1px solid #ddd;
+            border-top: none;
+            border-radius: 0 0 4px 4px;
+            z-index: 100;
+            display: none;
+        }
+        .suggestion-item {
+            padding: 8px 12px;
+            cursor: pointer;
+            border-bottom: 1px solid #eee;
+        }
+        .suggestion-item:hover {
+            background-color: #f0f0f0;
+        }
+        .search-position {
+            position: relative;
+        }
+        .no-results {
+            text-align: center;
+            padding: 40px 20px;
+            color: #666;
+            background: #f8f8f8;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+        .full-width {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+    
+        .search-actions {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 20px;
+            background: #f8f8f8;
+            padding: 15px;
+            border-radius: 8px;
+        }
+        .action-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 8px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        .share-btn {
+            background-color: #4e6bff;
+            color: white;
+            border: none;
+        }
+        .download-btn {
+            background-color: #750000;
+            color: white;
+            border: none;
+        }
+        .action-btn:hover {
+            opacity: 0.9;
+            transform: translateY(-2px);
+        }
+        .action-btn .icon {
+            margin-right: 8px;
+        }
+        .modal-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .modal-content {
+            background-color: white;
+            padding: 25px;
+            border-radius: 8px;
+            max-width: 500px;
+            width: 90%;
+            position: relative;
+        }
+        .modal-close {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            font-size: 24px;
+            cursor: pointer;
+        }
+        .copy-link-container {
+            display: flex;
+            margin: 15px 0;
+        }
+        .copy-link-input {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px 0 0 4px;
+            font-size: 14px;
+        }
+        .copy-btn {
+            background-color: #28a745;
+            color: white;
+            border: none;
+            padding: 0 15px;
+            border-radius: 0 4px 4px 0;
+            cursor: pointer;
+        }
+        .share-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        .share-buttons .share-btn {
+            padding: 8px 15px;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            display: inline-flex;
+            align-items: center;
+        }
+        .share-buttons .whatsapp {
+            background-color: #25D366;
+        }
+        .share-buttons .email {
+            background-color: #d44638;
+        }
+        .share-buttons .telegram {
+            background-color: #0088cc;
+        }
+
+</style>
+</head>
+<body>
+    <header>
+        <h1>Ricerca Foto</h1>
+        <nav>
+            <a href="{{ url_for('index') }}" class="btn">⬅️ Torna alla galleria</a>
+        </nav>
+    </header>
+
+    <main>
+        <div class="search-container">
+            <form action="{{ url_for('ricerca') }}" method="get">
+                <div class="search-position">
+                    <div class="search-box">
+                        <input type="text" name="q" id="searchInput" class="search-input" 
+                               placeholder="Cerca in titoli, descrizioni, categorie..." 
+                               value="{{ query }}" autocomplete="off">
+                        <button type="submit" class="search-button">🔍 Cerca</button>
+                    </div>
+                    <div class="suggestions-container" id="suggestionsContainer"></div>
+                </div>
+                
+                <div class="advanced-search">
+                    <a class="advanced-link" id="advancedToggle">Ricerca avanzata ⯆</a>
+                    <div class="advanced-options" id="advancedOptions">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="categoria">Categoria:</label>
+                                <select name="categoria" id="categoria" class="full-width">
+                                    <option value="tutte">Tutte le categorie</option>
+                                    {% for cat in categorie %}
+                                        <option value="{{ cat }}" {% if categoria == cat %}selected{% endif %}>{{ cat }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="data_inizio">Data inizio:</label>
+                                <input type="date" name="data_inizio" id="data_inizio" 
+                                       value="{{ data_inizio }}" class="full-width">
+                            </div>
+                            <div class="form-group">
+                                <label for="data_fine">Data fine:</label>
+                                <input type="date" name="data_fine" id="data_fine" 
+                                       value="{{ data_fine }}" class="full-width">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        {% if risultati is not none %}
+            <div class="search-results">
+                <div class="result-count">
+{% if risultati and num_risultati > 0 %}
+    <div class="search-actions">
+        <button id="shareSearchBtn" class="action-btn share-btn">
+            <span class="icon">🔗</span> Condividi questa ricerca
+        </button>
+        <a id="downloadResultsBtn" href="{{ url_for('download_search_results') }}?q={{ query }}&categoria={{ categoria }}&data_inizio={{ data_inizio }}&data_fine={{ data_fine }}" class="action-btn download-btn">
+            <span class="icon">⬇️</span> Scarica tutte le foto (ZIP)
+        </a>
+    </div>
+
+    <!-- Modal per la condivisione della ricerca -->
+    <div id="shareModal" class="modal-container" style="display:none;">
+        <div class="modal-content">
+            <span class="modal-close">&times;</span>
+            <h3>Condividi questa ricerca</h3>
+            <p>Usa questo link per condividere esattamente questa ricerca:</p>
+            <div class="copy-link-container">
+                <input type="text" id="searchLinkInput" readonly class="copy-link-input">
+                <button id="copyLinkBtn" class="copy-btn">Copia</button>
+            </div>
+            <div class="share-buttons">
+                <a id="whatsappShareBtn" href="#" class="share-btn whatsapp">
+                    <span class="icon">📱</span> WhatsApp
+                </a>
+                <a id="emailShareBtn" href="#" class="share-btn email">
+                    <span class="icon">📧</span> Email
+                </a>
+                <a id="telegramShareBtn" href="#" class="share-btn telegram">
+                    <span class="icon">📢</span> Telegram
+                </a>
+            </div>
+        </div>
+    </div>
+{% endif %}
+
+                    {{ num_risultati }} risultati trovati{% if query %} per "{{ query }}"{% endif %}
+                </div>
+                
+                {% if risultati %}
+                    <div class="galleria photo-grid">
+                        {% for foto in risultati %}
+                            <div class="foto photo-card">
+                                <img src="{{ url_for('static', filename=foto.nome_file) }}" 
+                                     alt="{{ foto.titolo }}" onclick="showModal(this)">
+                                <div class="photo-info">
+                                    <strong>{{ foto.titolo }}</strong><br>
+                                    <em>{{ foto.descrizione }}</em><br>
+                                    <small class="date">{{ foto.data }}</small><br>
+                                    <small class="category">{{ foto.categoria_display }}</small>
+                                </div>
+                                <div class="actions">
+                                    {% if session['username'] %}
+                                        <a href="{{ url_for('modifica', id_foto=foto.id) }}" class="btn">✏️ Modifica</a>
+                                        <a href="{{ url_for('elimina', id_foto=foto.id) }}" class="btn delete" 
+                                           onclick="return confirm('Sei sicuro di voler eliminare questa foto?')">🗑️ Elimina</a>
+                                        <a href="{{ url_for('mostra_categoria', nome=foto.categoria) }}" class="btn">📁 Categoria</a>
+                                    {% endif %}
+                                    <a class="btn" href="{{ url_for('condividi_migliore', id_foto=foto.id) }}" target="_blank">🖼️ Condividi</a>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="no-results">
+                        <h3>Nessun risultato trovato</h3>
+                        <p>Prova a modificare i termini di ricerca o usa filtri diversi.</p>
+                    </div>
+                {% endif %}
+            </div>
+        {% endif %}
+    </main>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Toggle ricerca avanzata
+            const advancedToggle = document.getElementById('advancedToggle');
+            const advancedOptions = document.getElementById('advancedOptions');
+            
+            advancedToggle.addEventListener('click', function() {
+                advancedOptions.classList.toggle('show');
+                advancedToggle.textContent = advancedOptions.classList.contains('show') 
+                    ? 'Ricerca avanzata ⯅' 
+                    : 'Ricerca avanzata ⯆';
+            });
+            
+            // Se ci sono parametri avanzati, mostra le opzioni avanzate
+            if ('{{ categoria }}' !== 'tutte' && '{{ categoria }}' !== '' || 
+                '{{ data_inizio }}' || '{{ data_fine }}') {
+                advancedOptions.classList.add('show');
+                advancedToggle.textContent = 'Ricerca avanzata ⯅';
+            }
+            
+            // Gestione suggerimenti
+            const searchInput = document.getElementById('searchInput');
+            const suggestionsContainer = document.getElementById('suggestionsContainer');
+            
+            let timeout = null;
+            
+            searchInput.addEventListener('input', function() {
+                const query = this.value.trim();
+                
+                clearTimeout(timeout);
+                
+                if (query.length < 2) {
+                    suggestionsContainer.style.display = 'none';
+                    return;
+                }
+                
+                timeout = setTimeout(function() {
+                    fetch(`/api/search_suggestions?q=${encodeURIComponent(query)}`)
+                        .then(response => response.json())
+                        .then(suggestions => {
+                            suggestionsContainer.innerHTML = '';
+                            
+                            if (suggestions.length === 0) {
+                                suggestionsContainer.style.display = 'none';
+                                return;
+                            }
+                            
+                            suggestions.forEach(suggestion => {
+                                const div = document.createElement('div');
+                                div.className = 'suggestion-item';
+                                div.textContent = suggestion;
+                                
+                                div.addEventListener('click', function() {
+                                    searchInput.value = suggestion;
+                                    suggestionsContainer.style.display = 'none';
+                                    searchInput.focus();
+                                });
+                                
+                                suggestionsContainer.appendChild(div);
+                            });
+                            
+                            suggestionsContainer.style.display = 'block';
+                        })
+                        .catch(error => {
+                            console.error('Errore nel recupero dei suggerimenti:', error);
+                        });
+                }, 300);
+            });
+            
+            // Nascondi i suggerimenti quando si clicca fuori
+            document.addEventListener('click', function(e) {
+                if (!searchInput.contains(e.target) && !suggestionsContainer.contains(e.target)) {
+                    suggestionsContainer.style.display = 'none';
+                }
+            });
+            
+            // Gestione tasti freccia nei suggerimenti
+            searchInput.addEventListener('keydown', function(e) {
+                if (suggestionsContainer.style.display === 'none') return;
+                
+                const items = suggestionsContainer.querySelectorAll('.suggestion-item');
+                if (!items.length) return;
+                
+                const active = suggestionsContainer.querySelector('.suggestion-item.active');
+                
+                if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    if (!active) {
+                        items[0].classList.add('active');
+                        items[0].style.backgroundColor = '#e0e0e0';
+                    } else {
+                        const nextIndex = Array.from(items).indexOf(active) + 1;
+                        if (nextIndex < items.length) {
+                            active.classList.remove('active');
+                            active.style.backgroundColor = '';
+                            items[nextIndex].classList.add('active');
+                            items[nextIndex].style.backgroundColor = '#e0e0e0';
+                            
+                            // Auto-scroll
+                            if (items[nextIndex].offsetTop + items[nextIndex].clientHeight > 
+                                suggestionsContainer.scrollTop + suggestionsContainer.clientHeight) {
+                                suggestionsContainer.scrollTop = items[nextIndex].offsetTop + 
+                                                              items[nextIndex].clientHeight - 
+                                                              suggestionsContainer.clientHeight;
+                            }
+                        }
+                    }
+                } else if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    if (active) {
+                        const prevIndex = Array.from(items).indexOf(active) - 1;
+                        if (prevIndex >= 0) {
+                            active.classList.remove('active');
+                            active.style.backgroundColor = '';
+                            items[prevIndex].classList.add('active');
+                            items[prevIndex].style.backgroundColor = '#e0e0e0';
+                            
+                            // Auto-scroll
+                            if (items[prevIndex].offsetTop < suggestionsContainer.scrollTop) {
+                                suggestionsContainer.scrollTop = items[prevIndex].offsetTop;
+                            }
+                        }
+                    }
+                } else if (e.key === 'Enter' && active) {
+                    e.preventDefault();
+                    searchInput.value = active.textContent;
+                    suggestionsContainer.style.display = 'none';
+                    // Invia il form
+                    searchInput.form.submit();
+                } else if (e.key === 'Escape') {
+                    suggestionsContainer.style.display = 'none';
+                }
+            });
+        });
+        
+        // Modal per immagini (simile a categoria.html)
+        let currentIndex = -1;
+        let images = [];
+        
+        function showModal(img) {
+            // Controlla se esiste già un modal, se no lo crea
+            let modal = document.getElementById("myModal");
+            if (!modal) {
+                modal = document.createElement("div");
+                modal.id = "myModal";
+                modal.className = "overlay";
+                
+                const content = document.createElement("div");
+                content.className = "overlay-content";
+                
+                const closeBtn = document.createElement("span");
+                closeBtn.className = "close-btn";
+                closeBtn.innerHTML = "&times;";
+                closeBtn.onclick = closeModal;
+                
+                const prevBtn = document.createElement("span");
+                prevBtn.className = "prev";
+                prevBtn.innerHTML = "&#10094;";
+                prevBtn.onclick = prevImage;
+                
+                const nextBtn = document.createElement("span");
+                nextBtn.className = "next";
+                nextBtn.innerHTML = "&#10095;";
+                nextBtn.onclick = nextImage;
+                
+                const modalImg = document.createElement("img");
+                modalImg.id = "img01";
+                
+                const metadata = document.createElement("div");
+                metadata.id = "metadata";
+                metadata.className = "metadata";
+                
+                const popupShare = document.createElement("div");
+                popupShare.id = "popup-share";
+                popupShare.style.marginTop = "10px";
+                popupShare.style.display = "flex";
+                popupShare.style.gap = "10px";
+                popupShare.style.justifyContent = "center";
+                
+                const directShare = document.createElement("a");
+                directShare.id = "directShare";
+                directShare.className = "btn";
+                directShare.target = "_blank";
+                directShare.textContent = "🖼️ Condividi";
+                
+                const copyShare = document.createElement("a");
+                copyShare.id = "copyShare";
+                copyShare.className = "btn";
+                copyShare.textContent = "📋 Copia link";
+                copyShare.onclick = copyToClipboard;
+                
+                popupShare.appendChild(directShare);
+                popupShare.appendChild(copyShare);
+                
+                content.appendChild(closeBtn);
+                content.appendChild(prevBtn);
+                content.appendChild(modalImg);
+                content.appendChild(metadata);
+                content.appendChild(popupShare);
+                content.appendChild(nextBtn);
+                
+                modal.appendChild(content);
+                document.body.appendChild(modal);
+            }
+            
+            // Raccoglie tutte le immagini nella galleria per la navigazione
+            images = Array.from(document.querySelectorAll(".photo-card img"));
+            currentIndex = images.indexOf(img);
+            
+            // Mostra l'immagine selezionata nel modal
+            modal.style.display = "flex";
+            document.getElementById("img01").src = img.src;
+            
+            // Aggiorna i metadati
+            updateModalMetadata();
+        }
+        
+        function closeModal() {
+            document.getElementById("myModal").style.display = "none";
+        }
+        
+        function nextImage() {
+            if (images.length === 0) return;
+            currentIndex = (currentIndex + 1) % images.length;
+            document.getElementById("img01").src = images[currentIndex].src;
+            updateModalMetadata();
+        }
+        
+        function prevImage() {
+            if (images.length === 0) return;
+            currentIndex = (currentIndex - 1 + images.length) % images.length;
+            document.getElementById("img01").src = images[currentIndex].src;
+            updateModalMetadata();
+        }
+        
+        function updateModalMetadata() {
+            const img = images[currentIndex];
+            const fotoDiv = img.closest(".foto");
+            const titolo = fotoDiv.querySelector("strong").innerText;
+            const descrizione = fotoDiv.querySelector("em").innerText;
+            const data = fotoDiv.querySelector("small.date").innerText;
+            const categoria = fotoDiv.querySelector("small.category").innerText;
+            
+            document.getElementById("metadata").innerHTML = `
+                <div><strong>${titolo}</strong></div>
+                <div><em>${descrizione}</em></div>
+                <div><small>${data}</small></div>
+                <div><small>${categoria}</small></div>
+            `;
+            
+            // Update share link
+            const id_foto = fotoDiv.querySelector("a[href^='/modifica/']").href.split('/').pop();
+            document.getElementById("directShare").href = `/condividi_migliore/${id_foto}`;
+        }
+        
+        function copyToClipboard() {
+            const fotoDiv = images[currentIndex].closest(".foto");
+            const id_foto = fotoDiv.querySelector("a[href^='/modifica/']").href.split('/').pop();
+            
+            // Costruisci l'URL della pagina di condivisione
+            const baseURL = window.location.origin;
+            const shareURL = baseURL + `/condividi_migliore/${id_foto}`;
+            
+            // Copia negli appunti
+            navigator.clipboard.writeText(shareURL)
+                .then(() => {
+                    alert("Link alla pagina di condivisione copiato negli appunti!");
+                })
+                .catch(err => {
+                    console.error("Errore nel copiare il link: ", err);
+                    alert("Impossibile copiare il link. Il tuo browser potrebbe non supportare questa funzione.");
+                });
+        }
+    
+// Gestione condivisione ricerca
+const shareSearchBtn = document.getElementById('shareSearchBtn');
+const shareModal = document.getElementById('shareModal');
+const searchLinkInput = document.getElementById('searchLinkInput');
+const copyLinkBtn = document.getElementById('copyLinkBtn');
+const whatsappShareBtn = document.getElementById('whatsappShareBtn');
+const emailShareBtn = document.getElementById('emailShareBtn');
+const telegramShareBtn = document.getElementById('telegramShareBtn');
+
+const currentSearchUrl = window.location.href;
+
+if (shareSearchBtn) {
+    shareSearchBtn.addEventListener('click', function() {
+        shareModal.style.display = 'flex';
+        searchLinkInput.value = currentSearchUrl;
+    });
+
+    document.querySelector('.modal-close').addEventListener('click', function() {
+        shareModal.style.display = 'none';
+    });
+
+    shareModal.addEventListener('click', function(e) {
+        if (e.target === shareModal) {
+            shareModal.style.display = 'none';
+        }
+    });
+
+    copyLinkBtn.addEventListener('click', function() {
+        searchLinkInput.select();
+        document.execCommand('copy');
+
+        const originalText = copyLinkBtn.textContent;
+        copyLinkBtn.textContent = 'Copiato!';
+        copyLinkBtn.style.backgroundColor = '#218838';
+
+        setTimeout(function() {
+            copyLinkBtn.textContent = originalText;
+            copyLinkBtn.style.backgroundColor = '#28a745';
+        }, 2000);
+    });
+
+    whatsappShareBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        const shareText = `Ho trovato ${document.querySelector('.result-count').textContent.trim()} nella galleria fotografica. Dai un'occhiata:`;
+        const shareUrl = `whatsapp://send?text=${encodeURIComponent(shareText + ' ' + currentSearchUrl)}`;
+        window.location.href = shareUrl;
+    });
+
+    emailShareBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        const subject = 'Galleria fotografica: risultati ricerca';
+        const body = `Ho trovato ${document.querySelector('.result-count').textContent.trim()} nella galleria fotografica.\n\nVisita questo link per vedere i risultati:\n${currentSearchUrl}`;
+        window.location.href = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    });
+
+    telegramShareBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        const shareText = `Ho trovato ${document.querySelector('.result-count').textContent.trim()} nella galleria fotografica.`;
+        window.open(`https://t.me/share/url?url=${encodeURIComponent(currentSearchUrl)}&text=${encodeURIComponent(shareText)}`, '_blank');
+    });
+}
+
+</script>
+
+    <footer>
+        <p>&copy; 2025 Powered by Fabry FVCG</p>
+    </footer>
+</body>
+</html>

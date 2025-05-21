@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Condivisione Foto - {{ foto.titolo }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        .instructions {
+            background-color: #e9f7fe;
+            border-left: 4px solid #3498db;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 0 5px 5px 0;
+        }
+        .method {
+            background-color: white;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .method h3 {
+            margin-top: 0;
+            color: #750000;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+        }
+        .method-steps {
+            list-style-type: none;
+            padding: 0;
+        }
+        .method-steps li {
+            margin-bottom: 10px;
+            padding-left: 25px;
+            position: relative;
+        }
+        .method-steps li:before {
+            content: "✓";
+            position: absolute;
+            left: 0;
+            color: #28a745;
+        }
+        .share-btn {
+            padding: 10px 15px;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            display: inline-block;
+            text-decoration: none;
+            margin: 5px;
+            text-align: center;
+        }
+        .whatsapp { background-color: #25D366; }
+        .telegram { background-color: #0088cc; }
+        .messenger { background-color: #0084ff; }
+        .email { background-color: #d44638; }
+        .native { background-color: #3498db; }
+        .android { background-color: #a4c639; }
+        .ios { background-color: #000000; }
+        
+        .share-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            margin: 15px 0;
+        }
+        .preview-image {
+            max-width: 100%;
+            height: auto;
+            border-radius: 8px;
+            margin: 10px 0;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .hidden-download {
+            display: none;
+        }
+        .platform-section {
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 1px solid #eee;
+        }
+        .platform-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .detection-message {
+            font-style: italic;
+            margin-bottom: 15px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Condivisione: {{ foto.titolo }}</h1>
+        <nav>
+            <a href="{{ url_for('mostra_categoria', nome=foto.categoria) }}" class="btn">⬅️ Torna alla categoria</a>
+        </nav>
+    </header>
+
+    <main>
+        <div class="method">
+            <img src="{{ url_for('static', filename=foto.nome_file) }}" alt="{{ foto.titolo }}" class="preview-image">
+            
+            <div class="instructions">
+                <h3>Informazioni sull'immagine</h3>
+                <p><strong>Titolo:</strong> {{ foto.titolo }}</p>
+                <p><strong>Descrizione:</strong> {{ foto.descrizione }}</p>
+                <p><strong>Data:</strong> {{ foto.data }}</p>
+                <p><strong>Categoria:</strong> {{ foto.categoria }}</p>
+            </div>
+            
+            <div class="method">
+                <h3>Condivisione diretta</h3>
+                <p>Scegli una delle app per condividere questa immagine:</p>
+                
+                <div class="share-container">
+                    <a id="whatsappBtn" href="#" class="share-btn whatsapp">WhatsApp</a>
+                    <a id="telegramBtn" href="#" class="share-btn telegram">Telegram</a>
+                    <a id="messengerBtn" href="#" class="share-btn messenger">Messenger</a>
+                    <a id="emailBtn" href="#" class="share-btn email">Email</a>
+                    <a id="nativeShareBtn" class="share-btn native" style="display: none;">Condividi</a>
+                </div>
+                
+                <div class="detection-message" id="detectionMessage"></div>
+                
+                <div class="platform-section" id="platformOptions" style="display: none;">
+                    <p>Sembri essere su un dispositivo mobile. Seleziona il tuo sistema operativo per opzioni di condivisione ottimizzate:</p>
+                    <div class="platform-buttons">
+                        <button id="androidBtn" class="share-btn android">Android</button>
+                        <button id="iosBtn" class="share-btn ios">iOS (iPhone/iPad)</button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="method">
+                <h3>Scarica l'immagine</h3>
+                <p>Se preferisci, puoi scaricare l'immagine e condividerla manualmente:</p>
+                <a href="{{ url_for('download_image', id_foto=foto.id) }}" class="share-btn native" download>⬇️ Scarica immagine</a>
+            </div>
+        </div>
+        
+        <!-- Link nascosto per il download -->
+        <a id="hiddenDownload" class="hidden-download" href="{{ url_for('download_image', id_foto=foto.id) }}" download></a>
+    </main>
+
+    <footer>
+        <p>&copy; 2025 Powerded by Fabry FVCG</p>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const imageUrl = "{{ url_for('static', filename=foto.nome_file, _external=True) }}";
+            const imageFullUrl = imageUrl.startsWith('http') ? imageUrl : window.location.origin + imageUrl;
+            const imageTitle = "{{ foto.titolo }}";
+            const imageDescription = "{{ foto.descrizione }}";
+            const imageDate = "{{ foto.data }}";
+            const hiddenDownload = document.getElementById('hiddenDownload');
+            const nativeShareBtn = document.getElementById('nativeShareBtn');
+            const whatsappBtn = document.getElementById('whatsappBtn');
+            const telegramBtn = document.getElementById('telegramBtn');
+            const messengerBtn = document.getElementById('messengerBtn');
+            const emailBtn = document.getElementById('emailBtn');
+            const detectionMessage = document.getElementById('detectionMessage');
+            const platformOptions = document.getElementById('platformOptions');
+            const androidBtn = document.getElementById('androidBtn');
+            const iosBtn = document.getElementById('iosBtn');
+            
+            // Rilevamento dispositivo
+            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+            const isAndroid = /Android/i.test(navigator.userAgent);
+            const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+            
+            // Controlla se il browser supporta la Web Share API
+            const supportsWebShare = navigator.share !== undefined;
+            
+            // Testo da condividere
+            const shareText = `${imageTitle}\n\n${imageDescription}\n\nData: ${imageDate}\n\n`;
+            
+            // Mostra opzioni appropriate in base al dispositivo
+            if (isMobile) {
+                platformOptions.style.display = 'block';
+                if (isAndroid) {
+                    detectionMessage.textContent = "Rilevato dispositivo Android. Le opzioni di condivisione sono ottimizzate per il tuo dispositivo.";
+                } else if (isIOS) {
+                    detectionMessage.textContent = "Rilevato dispositivo iOS. Le opzioni di condivisione sono ottimizzate per il tuo dispositivo.";
+                } else {
+                    detectionMessage.textContent = "Rilevato dispositivo mobile. Seleziona il tuo sistema operativo per opzioni migliori.";
+                }
+            } else {
+                detectionMessage.textContent = "Stai usando un computer desktop. Alcune opzioni di condivisione potrebbero funzionare meglio sui dispositivi mobili.";
+            }
+            
+            // Se il browser supporta la Web Share API, mostra il pulsante nativo
+            if (supportsWebShare) {
+                nativeShareBtn.style.display = 'inline-block';
+                nativeShareBtn.addEventListener('click', nativeShare);
+            }
+            
+            // Imposta gli eventi per i pulsanti
+            whatsappBtn.addEventListener('click', shareWhatsApp);
+            telegramBtn.addEventListener('click', shareTelegram);
+            messengerBtn.addEventListener('click', shareMessenger);
+            emailBtn.addEventListener('click', shareEmail);
+            androidBtn.addEventListener('click', setupAndroid);
+            iosBtn.addEventListener('click', setupIOS);
+            
+            // Funzione di condivisione nativa
+            function nativeShare(e) {
+                e.preventDefault();
+                
+                if (navigator.share) {
+                    navigator.share({
+                        title: imageTitle,
+                        text: shareText,
+                        url: imageFullUrl
+                    }).catch(err => {
+                        console.error('Errore durante la condivisione:', err);
+                    });
+                }
+            }
+            
+            // Condivisione su WhatsApp
+            function shareWhatsApp(e) {
+                e.preventDefault();
+                
+                if (isMobile) {
+                    // Per dispositivi mobili, prova a usare lo schema URI di WhatsApp
+                    window.location.href = `whatsapp://send?text=${encodeURIComponent(shareText + imageFullUrl)}`;
+                } else {
+                    // Per desktop, usa WhatsApp Web
+                    window.open(`https://wa.me/?text=${encodeURIComponent(shareText + imageFullUrl)}`, '_blank');
+                }
+            }
+            
+            // Condivisione su Telegram
+            function shareTelegram(e) {
+                e.preventDefault();
+                window.open(`https://t.me/share/url?url=${encodeURIComponent(imageFullUrl)}&text=${encodeURIComponent(shareText)}`, '_blank');
+            }
+            
+            // Condivisione su Messenger
+            function shareMessenger(e) {
+                e.preventDefault();
+                window.open(`https://www.facebook.com/dialog/send?link=${encodeURIComponent(imageFullUrl)}&app_id=291494419107518&redirect_uri=${encodeURIComponent(window.location.href)}`, '_blank');
+            }
+            
+            // Condivisione via email
+            function shareEmail(e) {
+                e.preventDefault();
+                window.location.href = `mailto:?subject=${encodeURIComponent(imageTitle)}&body=${encodeURIComponent(shareText + imageFullUrl)}`;
+            }
+            
+            // Configurazione specifica per Android
+            function setupAndroid() {
+                detectionMessage.textContent = "Opzioni ottimizzate per Android attivate.";
+                
+                // Aggiorna i link
+                whatsappBtn.href = `intent://send?text=${encodeURIComponent(shareText + imageFullUrl)}#Intent;package=com.whatsapp;scheme=whatsapp;end`;
+                
+                // Aggiorna il pulsante WhatsApp per dispositivi Android
+                whatsappBtn.removeEventListener('click', shareWhatsApp);
+                whatsappBtn.addEventListener('click', function(e) {
+                    // Prova prima l'intent
+                    setTimeout(function() {
+                        // Se non ha funzionato, prova il metodo standard
+                        window.location.href = `whatsapp://send?text=${encodeURIComponent(shareText + imageFullUrl)}`;
+                    }, 250);
+                });
+            }
+            
+            // Configurazione specifica per iOS
+            function setupIOS() {
+                detectionMessage.textContent = "Opzioni ottimizzate per iOS attivate.";
+                
+                // Aggiorna i link per iOS
+                whatsappBtn.href = `whatsapp://send?text=${encodeURIComponent(shareText + imageFullUrl)}`;
+                
+                // Altre ottimizzazioni iOS
+                nativeShareBtn.style.display = 'inline-block';
+                nativeShareBtn.textContent = 'Usa la condivisione iOS';
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modifica foto - Galleria</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <header>
+        <h1>Modifica foto</h1>
+        <nav>
+            <a href="{{ url_for('mostra_categoria', nome=foto.Categoria) }}" class="btn">Indietro</a>
+        </nav>
+    </header>
+
+    <div class="flash-messages">
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="flash">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+    </div>
+
+    <main class="edit-form">
+        <div class="photo-preview">
+            <!-- CORREZIONE: Usa url_for per il percorso dell'immagine -->
+            <img src="{{ url_for('static', filename=foto.Percorso) }}" alt="{{ foto.Titolo }}">
+        </div>
+
+        <form method="post" action="{{ url_for('modifica', id_foto=foto.ID) }}">
+            <div class="form-group">
+                <label for="titolo">Titolo:</label>
+                <input type="text" id="titolo" name="titolo" value="{{ foto.Titolo }}">
+            </div>
+
+            <div class="form-group">
+                <label for="descrizione">Descrizione:</label>
+                <textarea id="descrizione" name="descrizione">{{ foto.Descrizione }}</textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="data">Data:</label>
+                <input type="date" id="data" name="data" value="{{ foto.Data }}">
+            </div>
+
+            <div class="form-group">
+                <label for="categoria">Categoria:</label>
+                <select id="categoria" name="categoria">
+                    {% for cat in categorie %}
+                    <option value="{{ cat }}" {% if cat == foto.Categoria %}selected{% endif %}>{{ cat }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="form-group">
+                <button type="submit" class="btn">Salva modifiche</button>
+                <button type="submit" name="ruota90" class="btn">Ruota immagine</button>
+            </div>
+        </form>
+    </main>
+
+    <footer>
+        <p>&copy; 2025 Powerded by Fabry FVCG</p>
+    </footer>
+</body>
+</html>
