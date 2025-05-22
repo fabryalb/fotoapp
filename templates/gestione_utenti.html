@@ -4,6 +4,87 @@
     <meta charset="UTF-8">
     <title>Gestione Utenti</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        .badge {
+            display: inline-block;
+            padding: 2px 6px;
+            background-color: #f0f0f0;
+            border-radius: 4px;
+            margin-right: 5px;
+            margin-bottom: 5px;
+            font-size: 0.9em;
+        }
+        .permessi-attuali {
+            margin-bottom: 15px;
+            padding: 10px;
+            background-color: #f9f9f9;
+            border-radius: 5px;
+        }
+        .user-section {
+            margin-bottom: 30px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background-color: white;
+        }
+        .nuovo-utente-section {
+            margin-bottom: 30px;
+            padding: 15px;
+            border: 1px solid #750000;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+        }
+        .header-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .form-row {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        .form-column {
+            flex: 1;
+        }
+        .checkbox-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 5px;
+        }
+        .section-title {
+            color: #750000;
+            margin-bottom: 15px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 8px;
+        }
+        .action-row {
+            display: flex;
+            justify-content: flex-end;
+            margin-top: 15px;
+        }
+        .delete-btn {
+            background-color: #a00000;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9em;
+            margin-left: 10px;
+        }
+        .delete-btn:hover {
+            background-color: #800000;
+        }
+        .user-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+    </style>
 </head>
 <body>
 <header>
@@ -14,35 +95,160 @@
 </header>
 
 <main class="edit-form">
+    <div class="header-actions">
+        <h2>Gestione utenti</h2>
+        <a href="#" id="toggleNuovoUtente" class="btn">Aggiungi nuovo utente</a>
+    </div>
+
+    <!-- Sezione per aggiungere nuovo utente (nascosta all'inizio) -->
+    <div id="nuovoUtenteForm" class="nuovo-utente-section" style="display:none;">
+        <h3 class="section-title">Nuovo utente</h3>
+        <form method="post" action="{{ url_for('crea_utente') }}">
+            <div class="form-group">
+                <label for="username">Username:</label>
+                <input type="text" id="username" name="username" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="password">Password:</label>
+                <input type="password" id="password" name="password" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="ruolo">Ruolo:</label>
+                <select id="ruolo" name="ruolo" required>
+                    <option value="utente">Utente normale</option>
+                    <option value="admin">Amministratore</option>
+                </select>
+            </div>
+            
+            <div id="permessi-iniziali-container">
+                <h4>Permessi iniziali:</h4>
+                <div class="form-group">
+                    <label for="init_categoria">Categoria:</label>
+                    <div class="form-row">
+                        <div class="form-column">
+                            <select id="init_categoria" name="init_categoria">
+                                <option value="" selected>-- Nessuna categoria --</option>
+                                {% for categoria in categorie %}
+                                    <option value="{{ categoria }}">{{ categoria }}</option>
+                                {% endfor %}
+                                <option value="nuova">+ Nuova categoria</option>
+                            </select>
+                        </div>
+                        <div class="form-column" id="init-nuova-categoria" style="display:none;">
+                            <input type="text" name="init_nuova_categoria" placeholder="Nome nuova categoria">
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label>Permessi:</label>
+                    <div class="checkbox-group">
+                        <label><input type="checkbox" name="init_permessi[]" value="visualizza"> Visualizza</label>
+                        <label><input type="checkbox" name="init_permessi[]" value="modifica"> Modifica</label>
+                        <label><input type="checkbox" name="init_permessi[]" value="aggiungi"> Aggiungi</label>
+                        <label><input type="checkbox" name="init_permessi[]" value="elimina"> Elimina</label>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="action-row">
+                <button type="submit" class="btn">Crea utente</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Lista utenti esistenti -->
     {% for utente in utenti %}
-        <section style="margin-bottom: 30px;">
-            <h3>{{ utente.username }} ({{ utente.ruolo }})</h3>
+        <section class="user-section">
+            <div class="user-header">
+                <h3>{{ utente.username }} ({{ utente.ruolo }})</h3>
+                {% if utente.username != 'admin' and utente.username != session.username %}
+                    <form method="post" action="{{ url_for('elimina_utente', username=utente.username) }}" onsubmit="return confirm('Sei sicuro di voler eliminare questo utente?');">
+                        <button type="submit" class="delete-btn">Elimina utente</button>
+                    </form>
+                {% endif %}
+            </div>
+            
             {% if utente.permessi == 'ALL' %}
                 <p>Accesso completo (Admin)</p>
             {% else %}
+                <!-- Visualizza i permessi attuali -->
+                <div class="permessi-attuali">
+                    <h4>Permessi attuali:</h4>
+                    {% if utente.permessi is mapping %}
+                        {% if utente.permessi.items()|list|length > 0 %}
+                            <ul>
+                            {% for categoria, permessi in utente.permessi.items() %}
+                                <li>
+                                    <strong>{{ categoria }}</strong>: 
+                                    {% for p in permessi %}
+                                        <span class="badge">{{ p }}</span>
+                                    {% endfor %}
+                                </li>
+                            {% endfor %}
+                            </ul>
+                        {% else %}
+                            <p>Nessun permesso configurato</p>
+                        {% endif %}
+                    {% else %}
+                        <p>Formato permessi non riconosciuto</p>
+                    {% endif %}
+                </div>
+
                 <form method="post" action="{{ url_for('aggiorna_permessi', username=utente.username) }}">
                     <div class="form-group">
-                        <label for="categoria">Categoria:</label>
-                        <input type="text" name="categoria" placeholder="es. TORO" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="permesso">Permesso:</label>
-                        <select name="permesso">
-                            <option value="visualizza">Visualizza</option>
-                            <option value="modifica">Modifica</option>
-                            <option value="aggiungi">Aggiungi</option>
-                            <option value="elimina">Elimina</option>
+                        <label for="categoria-{{ utente.username }}">Categoria:</label>
+                        <select id="categoria-{{ utente.username }}" name="categoria" required>
+                            <option value="" disabled selected>Seleziona una categoria</option>
+                            {% for categoria in categorie %}
+                                <option value="{{ categoria }}">{{ categoria }}</option>
+                            {% endfor %}
+                            <option value="nuova">+ Nuova categoria</option>
                         </select>
                     </div>
+                    
+                    <!-- Campo per nuova categoria, inizialmente nascosto -->
+                    <div id="nuova-categoria-{{ utente.username }}" class="form-group" style="display:none; margin-top: 10px;">
+                        <label for="nuova_cat-{{ utente.username }}">Nome nuova categoria:</label>
+                        <input type="text" id="nuova_cat-{{ utente.username }}" name="nuova_categoria" placeholder="Nome nuova categoria">
+                    </div>
+                    
                     <div class="form-group">
-                        <label for="azione">Azione:</label>
-                        <select name="azione">
+                        <label>Permessi:</label>
+                        <div class="checkbox-group">
+                            <label><input type="checkbox" name="permessi[]" value="visualizza"> Visualizza</label>
+                            <label><input type="checkbox" name="permessi[]" value="modifica"> Modifica</label>
+                            <label><input type="checkbox" name="permessi[]" value="aggiungi"> Aggiungi</label>
+                            <label><input type="checkbox" name="permessi[]" value="elimina"> Elimina</label>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="azione-{{ utente.username }}">Azione:</label>
+                        <select id="azione-{{ utente.username }}" name="azione">
                             <option value="aggiungi">➕ Aggiungi</option>
                             <option value="rimuovi">➖ Rimuovi</option>
                         </select>
                     </div>
-                    <button type="submit" class="btn">Applica</button>
+                    
+                    <div class="action-row">
+                        <button type="submit" class="btn">Applica</button>
+                    </div>
                 </form>
+                
+                <script>
+                // Script per mostrare/nascondere il campo nuova categoria
+                document.getElementById('categoria-{{ utente.username }}').addEventListener('change', function() {
+                    var nuovaCategoriaDiv = document.getElementById('nuova-categoria-{{ utente.username }}');
+                    if (this.value === 'nuova') {
+                        nuovaCategoriaDiv.style.display = 'block';
+                    } else {
+                        nuovaCategoriaDiv.style.display = 'none';
+                    }
+                });
+                </script>
             {% endif %}
         </section>
     {% endfor %}
@@ -51,5 +257,40 @@
 <footer>
     <p>&copy; 2025 Gestione Utenti</p>
 </footer>
+
+<script>
+    // Toggle per mostrare/nascondere il form di nuovo utente
+    document.getElementById('toggleNuovoUtente').addEventListener('click', function(e) {
+        e.preventDefault();
+        var nuovoUtenteForm = document.getElementById('nuovoUtenteForm');
+        if (nuovoUtenteForm.style.display === 'none') {
+            nuovoUtenteForm.style.display = 'block';
+            this.textContent = 'Nascondi form nuovo utente';
+        } else {
+            nuovoUtenteForm.style.display = 'none';
+            this.textContent = 'Aggiungi nuovo utente';
+        }
+    });
+    
+    // Mostra/nascondi il campo per la nuova categoria nei permessi iniziali
+    document.getElementById('init_categoria').addEventListener('change', function() {
+        var nuovaCategoriaDiv = document.getElementById('init-nuova-categoria');
+        if (this.value === 'nuova') {
+            nuovaCategoriaDiv.style.display = 'block';
+        } else {
+            nuovaCategoriaDiv.style.display = 'none';
+        }
+    });
+    
+    // Nascondi i permessi iniziali se il ruolo è admin
+    document.getElementById('ruolo').addEventListener('change', function() {
+        var permessiContainer = document.getElementById('permessi-iniziali-container');
+        if (this.value === 'admin') {
+            permessiContainer.style.display = 'none';
+        } else {
+            permessiContainer.style.display = 'block';
+        }
+    });
+</script>
 </body>
 </html>

@@ -124,6 +124,37 @@ def categorie_con_permesso(tipo_permesso):
     
     return categorie
 
+from flask import Flask, render_template, request, redirect, url_for, session, flash, send_file
+import csv, os, json, threading, zipfile, tempfile
+from PIL import Image, ExifTags
+from datetime import datetime
+from werkzeug.utils import secure_filename
+
+app = Flask(__name__)
+app.secret_key = 'supersegreto'
+BASE_FOLDER = os.path.join('static', 'foto')
+CSV_FILE = 'dati_foto.csv'
+USERS_FILE = 'utenti.csv'
+
+os.makedirs(BASE_FOLDER, exist_ok=True)
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
+
+def extract_exif_date(image_path):
+    """Estrae la data EXIF di una foto se presente"""
+    try:
+        img = Image.open(image_path)
+        exif_data = img._getexif()
+        if exif_data:
+            for tag, value in exif_data.items():
+                tag_name = ExifTags.TAGS.get(tag)
+                if tag_name == "DateTimeOriginal":
+                    return datetime.strptime(value, "%Y:%m:%d %H:%M:%S")
+    except Exception as e:
+        print(f"Errore lettura EXIF da {image_path}: {e}")
+    return None
+
+# Funzioni come carica_utenti, carica_foto, ecc.
+
 @app.route('/')
 def index():
     tutte = carica_foto()
@@ -643,8 +674,39 @@ def gestione_utenti():
         flash("Solo l'amministratore può gestire gli utenti")
         return redirect(url_for('index'))
     
+    # Carica utenti
     utenti = carica_utenti()
-    return render_template('gestione_utenti.html', utenti=utenti)
+    
+    # Carica tutte le categorie esistenti dalle foto
+    tutte_le_foto = carica_foto()
+    categorie = sorted(set(f['categoria'] for f in tutte_le_foto))
+    
+    # Debug: stampa i permessi per verificare il formato
+    for utente in utenti:
+        print(f"Utente {utente['username']}, permessi: {type(utente['permessi'])}, {utente['permessi']}")
+    
+    return render_template('gestione_utenti.html', utenti=utenti, categorie=categorie)
+
+
+def normalizza_formato_permessi(utenti):
+    """Normalizza tutti i formati dei permessi in JSON valido."""
+    for u in utenti:
+        if u['permessi'] == 'ALL':
+            continue
+
+        if isinstance(u['permessi'], str):
+            try:
+                if u['permessi'].startswith('{'):
+                    try:
+                        permessi_dict = json.loads(u['permessi'])
+                    except:
+                        permessi_dict = ast.literal_eval(u['permessi'])
+                    u['permessi'] = json.dumps(permessi_dict, ensure_ascii=False)
+            except Exception as e:
+                print(f"Errore nella conversione dei permessi per {u['username']}: {e}")
+        elif isinstance(u['permessi'], dict):
+            u['permessi'] = json.dumps(u['permessi'], ensure_ascii=False)
+    return utenti
 
 @app.route('/aggiorna_permessi/<username>', methods=['POST'])
 def aggiorna_permessi(username):
@@ -660,41 +722,167 @@ def aggiorna_permessi(username):
         return redirect(url_for('gestione_utenti'))
     
     # Aggiorna i permessi
-    categoria = request.form.get('categoria')
-    permesso = request.form.get('permesso')
+    categoria_selezionata = request.form.get('categoria')
+    
+    # Gestione nuova categoria
+    if categoria_selezionata == 'nuova':
+        categoria = request.form.get('nuova_categoria', '').strip()
+        if not categoria:
+            flash("Devi specificare un nome per la nuova categoria")
+            return redirect(url_for('gestione_utenti'))
+    else:
+        categoria = categoria_selezionata
+    
     azione = request.form.get('azione')  # 'aggiungi' o 'rimuovi'
+    permessi_selezionati = request.form.getlist('permessi[]')  # Ottieni tutti i permessi selezionati
     
     if user['permessi'] == 'ALL':
         flash("Non è possibile modificare i permessi di un utente admin")
         return redirect(url_for('gestione_utenti'))
     
+    # Ottieni il dizionario dei permessi
     permessi = user['permessi']
     if isinstance(permessi, str) and permessi.startswith('{'):
         try:
             permessi = json.loads(permessi)
-        except:
+        except Exception as e:
+            print(f"Errore nel parsing JSON: {e}")
             permessi = {}
+    
+    # Debug
+    print(f"Prima della modifica: {permessi}")
     
     if azione == 'aggiungi':
         if categoria not in permessi:
             permessi[categoria] = []
-        if permesso not in permessi[categoria]:
-            permessi[categoria].append(permesso)
+        # Aggiungi tutti i permessi selezionati
+        for permesso in permessi_selezionati:
+            if permesso not in permessi[categoria]:
+                permessi[categoria].append(permesso)
     elif azione == 'rimuovi':
-        if categoria in permessi and permesso in permessi[categoria]:
-            permessi[categoria].remove(permesso)
-            if not permessi[categoria]:
-                del permessi[categoria]
+        # Rimuovi tutti i permessi selezionati
+        for permesso in permessi_selezionati:
+            if categoria in permessi and permesso in permessi[categoria]:
+                permessi[categoria].remove(permesso)
+        # Elimina la categoria se vuota
+        if categoria in permessi and not permessi[categoria]:
+            del permessi[categoria]
     
-    user['permessi'] = json.dumps(permessi)
+    # Debug
+    print(f"Dopo la modifica: {permessi}")
     
-    # Salva gli utenti
+    # Salva gli utenti con permessi normalizzati
+    user['permessi'] = permessi  # Passa il dizionario, normalizza_formato_permessi lo convertirà
     with open(USERS_FILE, 'w', newline='', encoding='utf-8') as f:
         writer = csv.DictWriter(f, fieldnames=['username', 'password', 'ruolo', 'permessi'], delimiter=';')
         writer.writeheader()
-        writer.writerows(utenti)
+        writer.writerows(normalizza_formato_permessi(utenti))
     
     flash("Permessi aggiornati con successo")
+    return redirect(url_for('gestione_utenti'))
+
+# Funzioni da aggiungere al file app.py
+
+@app.route('/crea_utente', methods=['POST'])
+def crea_utente():
+    """
+    Crea un nuovo utente con i permessi specificati.
+    """
+    if not session.get('username') or session.get('ruolo') != 'admin':
+        flash("Solo l'amministratore può creare nuovi utenti")
+        return redirect(url_for('index'))
+    
+    username = request.form.get('username')
+    password = request.form.get('password')
+    ruolo = request.form.get('ruolo')
+    
+    # Validazione dei dati
+    if not username or not password or not ruolo:
+        flash("Tutti i campi sono obbligatori")
+        return redirect(url_for('gestione_utenti'))
+    
+    # Carica utenti esistenti
+    utenti = carica_utenti()
+    
+    # Verifica che l'username non esista già
+    if any(u['username'] == username for u in utenti):
+        flash(f"L'username '{username}' è già in uso")
+        return redirect(url_for('gestione_utenti'))
+    
+    # Gestione dei permessi
+    if ruolo == 'admin':
+        permessi = 'ALL'
+    else:
+        permessi = {}
+        
+        # Gestisci i permessi iniziali se specificati
+        init_categoria = request.form.get('init_categoria')
+        if init_categoria and init_categoria != '':
+            # Gestione nuova categoria
+            if init_categoria == 'nuova':
+                nuova_categoria = request.form.get('init_nuova_categoria', '').strip()
+                if nuova_categoria:
+                    init_categoria = nuova_categoria
+                else:
+                    init_categoria = None
+            
+            # Aggiungi i permessi per la categoria specificata
+            if init_categoria:
+                init_permessi = request.form.getlist('init_permessi[]')
+                if init_permessi:
+                    permessi[init_categoria] = init_permessi
+    
+    # Crea il nuovo utente
+    nuovo_utente = {
+        'username': username,
+        'password': password,
+        'ruolo': ruolo,
+        'permessi': permessi
+    }
+    
+    # Aggiungi alla lista e salva
+    utenti.append(nuovo_utente)
+    
+    with open(USERS_FILE, 'w', newline='', encoding='utf-8') as f:
+        writer = csv.DictWriter(f, fieldnames=['username', 'password', 'ruolo', 'permessi'], delimiter=';')
+        writer.writeheader()
+        writer.writerows(normalizza_formato_permessi(utenti))
+    
+    flash(f"Utente '{username}' creato con successo")
+    return redirect(url_for('gestione_utenti'))
+
+@app.route('/elimina_utente/<username>', methods=['POST'])
+def elimina_utente(username):
+    """
+    Elimina un utente dal sistema.
+    """
+    if not session.get('username') or session.get('ruolo') != 'admin':
+        flash("Solo l'amministratore può eliminare utenti")
+        return redirect(url_for('index'))
+    
+    # Impedisci l'eliminazione dell'utente admin o dell'utente corrente
+    if username == 'admin' or username == session.get('username'):
+        flash("Non puoi eliminare questo utente")
+        return redirect(url_for('gestione_utenti'))
+    
+    # Carica gli utenti esistenti
+    utenti = carica_utenti()
+    
+    # Filtra l'utente da eliminare
+    utenti_aggiornati = [u for u in utenti if u['username'] != username]
+    
+    # Verifica che l'utente esistesse
+    if len(utenti) == len(utenti_aggiornati):
+        flash("Utente non trovato")
+        return redirect(url_for('gestione_utenti'))
+    
+    # Salva gli utenti aggiornati
+    with open(USERS_FILE, 'w', newline='', encoding='utf-8') as f:
+        writer = csv.DictWriter(f, fieldnames=['username', 'password', 'ruolo', 'permessi'], delimiter=';')
+        writer.writeheader()
+        writer.writerows(normalizza_formato_permessi(utenti_aggiornati))
+    
+    flash(f"Utente '{username}' eliminato con successo")
     return redirect(url_for('gestione_utenti'))
 
 @app.route('/crea_utenti_iniziali')
@@ -715,7 +903,7 @@ def crea_utenti_iniziali():
     with open(USERS_FILE, 'w', newline='', encoding='utf-8') as f:
         writer = csv.DictWriter(f, fieldnames=['username', 'password', 'ruolo', 'permessi'], delimiter=';')
         writer.writeheader()
-        writer.writerows(utenti)
+        writer.writerows(normalizza_formato_permessi(utenti))
     
     flash("Utenti iniziali creati con successo")
     return redirect(url_for('index'))
@@ -1196,10 +1384,11 @@ def download_search_results():
             pass
 
 if __name__ == '__main__':
-    import os
-    port = int(os.environ.get('PORT', 10000))
-    app.run(host='0.0.0.0', port=port)
-
+    def avvia_flask():
+        app.run(debug=True, host='0.0.0.0', port=5000, use_reloader=False)
+    
+    threading.Thread(target=avvia_flask, daemon=True).start()
+    input("✅ Server avviato. Premi INVIO per chiudere...")
 def extract_exif_date(image_path):
     """Estrae la data EXIF da un'immagine"""
     try:
