@@ -1384,11 +1384,7 @@ def download_search_results():
             pass
 
 if __name__ == '__main__':
-    def avvia_flask():
-        app.run(debug=True, host='0.0.0.0', port=5000, use_reloader=False)
-    
-    threading.Thread(target=avvia_flask, daemon=True).start()
-    input("✅ Server avviato. Premi INVIO per chiudere...")
+    app.run(debug=False, host='0.0.0.0', port=int(os.environ.get("PORT", 5000)))
 def extract_exif_date(image_path):
     """Estrae la data EXIF da un'immagine"""
     try:
