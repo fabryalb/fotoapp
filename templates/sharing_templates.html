@@ -1,0 +1,412 @@
+<!-- condividi_token.html - Template per visualizzazione foto condivise -->
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% if condivisione.titolo %}{{ condivisione.titolo }}{% else %}Foto Condivise{% endif %}</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(45deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            margin: 0;
+            font-size: 2.5em;
+            font-weight: 300;
+        }
+        
+        .header .subtitle {
+            margin: 10px 0 0 0;
+            opacity: 0.9;
+            font-size: 1.1em;
+        }
+        
+        .info-bar {
+            background: #f8f9fa;
+            padding: 15px 30px;
+            border-bottom: 1px solid #e9ecef;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        
+        .info-item {
+            display: flex;
+            align-items: center;
+            margin: 5px 0;
+        }
+        
+        .info-item i {
+            margin-right: 8px;
+            color: #6c757d;
+        }
+        
+        .copy-link-btn {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 0.9em;
+        }
+        
+        .copy-link-btn:hover {
+            background: #218838;
+            transform: translateY(-1px);
+        }
+        
+        .foto-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+            padding: 30px;
+        }
+        
+        .foto-item {
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .foto-item:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        }
+        
+        .foto-item img {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            transition: transform 0.3s ease;
+        }
+        
+        .foto-item:hover img {
+            transform: scale(1.05);
+        }
+        
+        .foto-info {
+            padding: 15px;
+        }
+        
+        .foto-nome {
+            font-weight: 600;
+            margin-bottom: 5px;
+            color: #333;
+        }
+        
+        .foto-meta {
+            font-size: 0.85em;
+            color: #6c757d;
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        .footer {
+            background: #343a40;
+            color: #adb5bd;
+            text-align: center;
+            padding: 20px;
+        }
+        
+        /* Lightbox */
+        .lightbox {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.9);
+        }
+        
+        .lightbox-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            max-width: 90%;
+            max-height: 90%;
+        }
+        
+        .lightbox img {
+            width: 100%;
+            height: auto;
+            border-radius: 10px;
+        }
+        
+        .close {
+            position: absolute;
+            top: 15px;
+            right: 35px;
+            color: #f1f1f1;
+            font-size: 40px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        
+        .close:hover {
+            color: #bbb;
+        }
+        
+        .nav-btn {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border: none;
+            font-size: 24px;
+            padding: 10px 15px;
+            cursor: pointer;
+            border-radius: 5px;
+            transition: background 0.3s;
+        }
+        
+        .nav-btn:hover {
+            background: rgba(255,255,255,0.3);
+        }
+        
+        .prev {
+            left: 20px;
+        }
+        
+        .next {
+            right: 20px;
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .foto-grid {
+                grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+                gap: 15px;
+                padding: 20px;
+            }
+            
+            .header h1 {
+                font-size: 2em;
+            }
+            
+            .info-bar {
+                flex-direction: column;
+                text-align: center;
+            }
+        }
+        
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #28a745;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 25px;
+            display: none;
+            z-index: 1001;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>📸 {% if condivisione.titolo %}{{ condivisione.titolo }}{% else %}Foto Condivise{% endif %}</h1>
+            <div class="subtitle">
+                {{ foto_list|length }} foto • Condiviso il {{ condivisione.creato_il[:10] }}
+            </div>
+        </div>
+        
+        <!-- Info Bar -->
+        <div class="info-bar">
+            <div>
+                <div class="info-item">
+                    <i>🔗</i> Link di condivisione
+                </div>
+                <div class="info-item">
+                    <i>👁️</i> {{ condivisione.accessi }} visualizzazioni
+                </div>
+            </div>
+            <button class="copy-link-btn" onclick="copyLink()">
+                📋 Copia Link
+            </button>
+        </div>
+        
+        <!-- Griglia Foto -->
+        <div class="foto-grid">
+            {% for foto in foto_list %}
+            <div class="foto-item" onclick="openLightbox({{ loop.index0 }})">
+                <img src="/condividi_token/{{ token }}/foto/{{ foto.id }}" 
+                     alt="{{ foto.nome }}" 
+                     loading="lazy">
+                <div class="foto-info">
+                    <div class="foto-nome">{{ foto.nome }}</div>
+                    <div class="foto-meta">
+                        <span>📅 {{ foto.data_scatto[:10] if foto.data_scatto else 'N/A' }}</span>
+                        <span>📏 {{ foto.dimensioni if foto.dimensioni else 'N/A' }}</span>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        
+        <!-- Footer -->
+        <div class="footer">
+            🔒 Accesso limitato tramite link condiviso • 
+            Valido fino al {{ condivisione.scadenza[:10] }}
+        </div>
+    </div>
+    
+    <!-- Lightbox -->
+    <div id="lightbox" class="lightbox" onclick="closeLightbox(event)">
+        <span class="close" onclick="closeLightbox()">&times;</span>
+        <button class="nav-btn prev" onclick="changeImage(-1)">&#10094;</button>
+        <button class="nav-btn next" onclick="changeImage(1)">&#10095;</button>
+        <div class="lightbox-content">
+            <img id="lightbox-img" src="" alt="">
+        </div>
+    </div>
+    
+    <!-- Toast per notifiche -->
+    <div id="toast" class="toast"></div>
+    
+    <script>
+        let currentImageIndex = 0;
+        const images = [
+            {% for foto in foto_list %}
+            {
+                src: '/condividi_token/{{ token }}/foto/{{ foto.id }}',
+                alt: '{{ foto.nome }}',
+                nome: '{{ foto.nome }}'
+            }{% if not loop.last %},{% endif %}
+            {% endfor %}
+        ];
+        
+        function openLightbox(index) {
+            currentImageIndex = index;
+            const lightbox = document.getElementById('lightbox');
+            const img = document.getElementById('lightbox-img');
+            
+            img.src = images[index].src;
+            img.alt = images[index].alt;
+            lightbox.style.display = 'block';
+            
+            // Preload prossima immagine
+            if (index < images.length - 1) {
+                const nextImg = new Image();
+                nextImg.src = images[index + 1].src;
+            }
+        }
+        
+        function closeLightbox(event) {
+            if (!event || event.target.id === 'lightbox' || event.target.className === 'close') {
+                document.getElementById('lightbox').style.display = 'none';
+            }
+        }
+        
+        function changeImage(direction) {
+            currentImageIndex += direction;
+            
+            if (currentImageIndex >= images.length) {
+                currentImageIndex = 0;
+            } else if (currentImageIndex < 0) {
+                currentImageIndex = images.length - 1;
+            }
+            
+            const img = document.getElementById('lightbox-img');
+            img.src = images[currentImageIndex].src;
+            img.alt = images[currentImageIndex].alt;
+        }
+        
+        function copyLink() {
+            const link = window.location.href;
+            navigator.clipboard.writeText(link).then(function() {
+                showToast('Link copiato negli appunti!');
+            }, function(err) {
+                // Fallback per browser più vecchi
+                const textArea = document.createElement("textarea");
+                textArea.value = link;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                showToast('Link copiato negli appunti!');
+            });
+        }
+        
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.style.display = 'block';
+            
+            setTimeout(() => {
+                toast.style.display = 'none';
+            }, 3000);
+        }
+        
+        // Keyboard navigation
+        document.addEventListener('keydown', function(e) {
+            const lightbox = document.getElementById('lightbox');
+            if (lightbox.style.display === 'block') {
+                if (e.key === 'Escape') {
+                    closeLightbox();
+                } else if (e.key === 'ArrowLeft') {
+                    changeImage(-1);
+                } else if (e.key === 'ArrowRight') {
+                    changeImage(1);
+                }
+            }
+        });
+        
+        // Swipe support per mobile
+        let startX = 0;
+        let endX = 0;
+        
+        document.getElementById('lightbox').addEventListener('touchstart', function(e) {
+            startX = e.touches[0].clientX;
+        });
+        
+        document.getElementById('lightbox').addEventListener('touchend', function(e) {
+            endX = e.changedTouches[0].clientX;
+            handleSwipe();
+        });
+        
+        function handleSwipe() {
+            const lightbox = document.getElementById('lightbox');
+            if (lightbox.style.display === 'block') {
+                if (startX - endX > 50) {
+                    changeImage(1); // Swipe left, next image
+                } else if (endX - startX > 50) {
+                    changeImage(-1); // Swipe right, previous image
+                }
+            }
+        }
+    </script>
+</body>
+</html>

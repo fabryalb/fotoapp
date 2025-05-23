@@ -2,10 +2,105 @@
 <html lang="it">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Categoria: {{ nome }}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <style>
-        /* Stili per la selezione multipla */
+        /* Stili per le sottocategorie come cartelle */
+        .subcategories-section {
+            margin-bottom: 30px;
+        }
+        
+        .subcategories-title {
+            color: #750000;
+            font-size: 1.2rem;
+            margin-bottom: 15px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        
+        .subcategories-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .subcategory-folder {
+            background-color: white;
+            border: 2px solid #750000;
+            border-radius: 8px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-decoration: none;
+            color: inherit;
+            display: block;
+        }
+        
+        .subcategory-folder:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 4px 12px rgba(117, 0, 0, 0.2);
+        }
+        
+        .folder-thumbnail {
+            width: 100%;
+            height: 150px;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .folder-thumbnail img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .folder-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(117, 0, 0, 0.8);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        
+        .subcategory-folder:hover .folder-overlay {
+            opacity: 1;
+        }
+        
+        .folder-info {
+            padding: 15px;
+            text-align: center;
+        }
+        
+        .folder-name {
+            font-weight: bold;
+            margin-bottom: 5px;
+            font-size: 1.1rem;
+        }
+        
+        .folder-count {
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+        
+        .photos-section-title {
+            color: #750000;
+            font-size: 1.2rem;
+            margin-bottom: 15px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        /* Stili esistenti per la selezione multipla */
         .multi-selection-toolbar {
             position: sticky;
             top: 0;
@@ -66,41 +161,193 @@
             box-shadow: 0 0 10px rgba(117, 0, 0, 0.3);
         }
 
-    .sorting-controls {
-        background-color: #f8f8f8;
-        padding: 10px 15px;
-        border-radius: 8px;
-        margin-bottom: 20px;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        display: flex;
-        flex-wrap: wrap;
-        gap: 8px;
-        align-items: center;
-    }
-    
-    .sort-btn {
-        display: inline-block;
-        padding: 5px 12px;
-        background-color: #eee;
-        border: 1px solid #ddd;
-        border-radius: 4px;
-        text-decoration: none;
-        color: #444;
-        font-size: 0.9rem;
-        transition: all 0.2s;
-    }
-    
-    .sort-btn:hover {
-        background-color: #e0e0e0;
-        border-color: #ccc;
-    }
-    
-    .sort-btn.active {
-        background-color: #750000;
-        border-color: #5e0000;
-        color: white;
-    }
+        .sorting-controls {
+            background-color: #f8f8f8;
+            padding: 10px 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            align-items: center;
+        }
+        
+        .sort-btn {
+            display: inline-block;
+            padding: 5px 12px;
+            background-color: #eee;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            text-decoration: none;
+            color: #444;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+        }
+        
+        .sort-btn:hover {
+            background-color: #e0e0e0;
+            border-color: #ccc;
+        }
+        
+        .sort-btn.active {
+            background-color: #750000;
+            border-color: #5e0000;
+            color: white;
+        }
 
+        .badge-copertina {
+            position: absolute;
+            top: 8px;
+            left: 8px;
+            background-color: #750000;
+            color: white;
+            padding: 3px 8px;
+            font-size: 0.75rem;
+            border-radius: 4px;
+            z-index: 10;
+        }
+
+        /* Scroll to top button */
+        #scrollTopBtn {
+            display: none;
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            z-index: 99;
+            font-size: 20px;
+            border: none;
+            outline: none;
+            background-color: #750000;
+            color: white;
+            cursor: pointer;
+            padding: 12px 16px;
+            border-radius: 50%;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+            transition: all 0.3s;
+        }
+        #scrollTopBtn:hover {
+            background-color: #5a0000;
+        }
+
+        /* Miglioramenti per mobile */
+        @media (max-width: 768px) {
+            .subcategories-grid {
+                grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+                gap: 10px;
+            }
+            
+            .subcategory-folder {
+                padding: 15px;
+            }
+            
+            .folder-icon {
+                font-size: 2rem;
+            }
+            
+            .sorting-controls {
+                padding: 8px 10px;
+                margin-bottom: 15px;
+            }
+            
+            .sort-btn {
+                padding: 8px 12px;
+                font-size: 0.85rem;
+                min-width: 44px;
+                text-align: center;
+            }
+            
+            .multi-selection-toolbar {
+                padding: 8px 10px;
+                flex-direction: column;
+                gap: 10px;
+                align-items: stretch;
+            }
+            
+            .selection-actions {
+                justify-content: center;
+                gap: 15px;
+            }
+            
+            .photo-selector {
+                width: 30px;
+                height: 30px;
+                top: 8px;
+                right: 8px;
+            }
+            
+            .overlay-content {
+                margin: 5% auto;
+                padding: 10px;
+                width: 95%;
+                max-width: none;
+            }
+            
+            .overlay-content img {
+                max-width: 100%;
+                max-height: 70vh;
+                object-fit: contain;
+            }
+            
+            .prev, .next {
+                font-size: 24px;
+                padding: 15px;
+                top: 50%;
+                transform: translateY(-50%);
+            }
+            
+            .prev {
+                left: 5px;
+            }
+            
+            .next {
+                right: 5px;
+            }
+            
+            .close-btn {
+                font-size: 28px;
+                right: 10px;
+                top: 5px;
+                padding: 5px 10px;
+            }
+            
+            .metadata {
+                padding: 10px;
+                font-size: 0.9rem;
+            }
+            
+            #popup-share {
+                flex-direction: column;
+                gap: 8px;
+                margin-top: 15px;
+            }
+            
+            #popup-share .btn {
+                padding: 12px;
+                text-align: center;
+            }
+
+            #scrollTopBtn {
+                bottom: 20px;
+                right: 20px;
+                padding: 10px 14px;
+                font-size: 18px;
+            }
+        }
+
+        /* Touch handling per la modal */
+        .overlay {
+            touch-action: pan-y;
+        }
+        
+        .overlay-content {
+            touch-action: manipulation;
+        }
+        
+        .overlay img {
+            touch-action: pan-x pan-y;
+            user-select: none;
+        }
     </style>
 </head>
 <body>
@@ -112,48 +359,104 @@
     </header>
 
     <main>
-    <div class="sorting-controls">
-        <span>Ordina per:</span>
-        <a href="{{ url_for('mostra_categoria', nome=nome) }}" class="sort-btn {% if sort_by == 'default' or sort_by is none %}active{% endif %}">Predefinito</a>
-        <a href="{{ url_for('mostra_categoria', nome=nome, sort='data') }}" class="sort-btn {% if sort_by == 'data' %}active{% endif %}">Data (più recenti)</a>
-        <a href="{{ url_for('mostra_categoria', nome=nome, sort='inserimento') }}" class="sort-btn {% if sort_by == 'inserimento' %}active{% endif %}">Ordine di inserimento</a>
-        <a href="{{ url_for('mostra_categoria', nome=nome, sort='nome') }}" class="sort-btn {% if sort_by == 'nome' %}active{% endif %}">Nome file</a>
-        <a href="{{ url_for('mostra_categoria', nome=nome, sort='exif') }}" class="sort-btn {% if sort_by == 'exif' %}active{% endif %}">Data EXIF</a>
-    </div>
+        <!-- Sottocategorie come cartelle (solo se esistono) -->
+        {% if sottocategorie %}
+        <div class="subcategories-section">
+            <h2 class="subcategories-title">📁 Sottocategorie</h2>
+            <div class="subcategories-grid">
+                {% for sottocategoria in sottocategorie %}
+                    <a href="{{ url_for('mostra_categoria', nome=sottocategoria.categoria_completa) }}" class="subcategory-folder">
+                        <div class="folder-thumbnail">
+                            {% if sottocategoria.foto_copertina %}
+                                <img src="{{ url_for('static', filename=sottocategoria.foto_copertina.nome_file) }}" alt="{{ sottocategoria.foto_copertina.titolo }}">
+                            {% endif %}
+                            <div class="folder-overlay">
+                                📂
+                            </div>
+                        </div>
+                        <div class="folder-info">
+                            <div class="folder-name">{{ sottocategoria.nome_breve }}</div>
+                            <div class="folder-count">{{ sottocategoria.num_foto }} foto</div>
+                        </div>
+                    </a>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
 
-        <!-- Barra degli strumenti per la selezione multipla -->
-        <div class="multi-selection-toolbar" id="multiSelectionToolbar" style="display: none;">
-            <div class="selection-info">
-                <span id="selectionCount">0</span> foto selezionate
+        <!-- Sezione foto dirette (solo se ci sono foto in questa categoria) -->
+        {% if foto %}
+        <div class="photos-section">
+            {% if sottocategorie %}
+                <h2 class="photos-section-title">📷 Foto in "{{ nome }}"</h2>
+            {% endif %}
+            
+            <div class="sorting-controls">
+                <span>Ordina per:</span>
+                <a href="{{ url_for('mostra_categoria', nome=nome) }}" class="sort-btn {% if sort_by == 'default' or sort_by is none %}active{% endif %}">Predefinito</a>
+                <a href="{{ url_for('mostra_categoria', nome=nome, sort='data') }}" class="sort-btn {% if sort_by == 'data' %}active{% endif %}">Data (più recenti)</a>
+                <a href="{{ url_for('mostra_categoria', nome=nome, sort='inserimento') }}" class="sort-btn {% if sort_by == 'inserimento' %}active{% endif %}">Ordine di inserimento</a>
+                <a href="{{ url_for('mostra_categoria', nome=nome, sort='nome') }}" class="sort-btn {% if sort_by == 'nome' %}active{% endif %}">Nome file</a>
+                <a href="{{ url_for('mostra_categoria', nome=nome, sort='exif') }}" class="sort-btn {% if sort_by == 'exif' %}active{% endif %}">Data EXIF</a>
             </div>
-            <div class="selection-actions">
-                <button id="clearSelectionBtn" class="btn">Annulla</button>
-                <button id="shareSelectedBtn" class="btn">Condividi selezionate</button>
-            </div>
-        </div>
-        
-        <div class="galleria photo-grid">
-            {% for f in foto %}
-                <div class="foto photo-card">
-                    <!-- Il selettore viene aggiunto qui tramite JavaScript al caricamento della pagina -->
-                    <img src="{{ url_for('static', filename=f[4]) }}" alt="{{ f[1] }}" onclick="showModal(this)">
-                    <div class="photo-info">
-                        <strong>{{ f[1] }}</strong><br>
-                        <em>{{ f[2] }}</em><br>
-                        <small class="date">{{ f[3] }}</small><br>
-                    </div>
-                    <div class="actions">
-                        {% if session['ruolo'] == 'admin' or (session['ruolo'] == 'utente' and 'modifica' in session['permessi'][nome]) %}
-                            <a href="{{ url_for('modifica', id_foto=f[0]) }}" class="btn">✏️ Modifica</a>
-                            <a href="{{ url_for('elimina', id_foto=f[0]) }}" class="btn delete">🗑️ Elimina</a>
-                            <a href="{{ url_for('imposta_copertina', id_foto=f[0]) }}" class="btn">📌 Copertina</a>
-                            <a class="btn" href="{{ url_for('condividi_migliore', id_foto=f[0]) }}" target="_blank">🖼️ Condividi</a>
-                        {% endif %}
-                    </div>
+
+            <!-- Barra degli strumenti per la selezione multipla -->
+            <div class="multi-selection-toolbar" id="multiSelectionToolbar" style="display: none;">
+                <div class="selection-info">
+                    <span id="selectionCount">0</span> foto selezionate
                 </div>
-            {% endfor %}
+                <div class="selection-actions">
+                    <button id="clearSelectionBtn" class="btn">Annulla</button>
+                    <button id="shareSelectedBtn" class="btn">Condividi selezionate</button>
+                </div>
+            </div>
+            
+            <div class="galleria photo-grid">
+                {% for f in foto %}
+                    <div class="foto photo-card">
+                        {% if f[6] == "1" %}<div class="badge-copertina">📌 Copertina</div>{% endif %}
+                        <!-- Il selettore viene aggiunto qui tramite JavaScript al caricamento della pagina -->
+                        <img src="{{ url_for('static', filename=f[4]) }}" alt="{{ f[1] }}" onclick="showModal(this)">
+                        <div class="photo-info">
+                            <strong>{{ f[1] }}</strong><br>
+                            <em>{{ f[2] }}</em><br>
+                            <small class="date">{{ f[3] }}</small><br>
+                        </div>
+                        <div class="actions">
+                            {% if session['ruolo'] == 'admin' or (session['ruolo'] == 'utente' and 'modifica' in session['permessi'][nome]) %}
+                                <a href="{{ url_for('modifica', id_foto=f[0]) }}" class="btn">✏️ Modifica</a>
+                                <a href="{{ url_for('elimina', id_foto=f[0]) }}" class="btn delete">🗑️ Elimina</a>
+                                <a href="{{ url_for('imposta_copertina', id_foto=f[0]) }}" class="btn">📌 Copertina</a>
+                                <a class="btn" href="{{ url_for('condividi_migliore', id_foto=f[0]) }}" target="_blank">🖼️ Condividi</a>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
         </div>
-    </main>
+        {% endif %}
+
+        <!-- Messaggio se non ci sono né foto né sottocategorie -->
+        {% if not foto and not sottocategorie %}
+        <div class="empty-gallery">
+            <p>Questa categoria è vuota.</p>
+            {% if session.username %}
+                <a href="{{ url_for('aggiungi') }}" class="btn">Aggiungi la prima foto</a>
+            {% endif %}
+        </div>
+        {% endif %}
+    <!-- Popup moderno per condivisione -->
+<div id="popup-link" style="display:none; text-align:center; margin: 20px auto; padding: 15px; border: 1px solid #750000; background: #fff3f3; max-width: 600px; border-radius: 8px;">
+  <p style="font-size: 1rem; margin-bottom: 10px;">✅ Link di condivisione creato:</p>
+  <a id="link-generato" href="#" target="_blank" style="word-break: break-all; color: #750000; font-weight: bold;"></a><br><br>
+  <div style="display: flex; flex-wrap: wrap; gap: 10px; justify-content: center;">
+    <button onclick="copyLink()" class="btn">📋 Copia</button>
+    <a id="waShare" class="btn" target="_blank">🟢 WhatsApp</a>
+    <a id="tgShare" class="btn" target="_blank">📢 Telegram</a>
+    <a id="emailShare" class="btn" target="_blank">✉️ Email</a>
+  </div>
+</div>
+</main>
 
     <!-- Popup ingrandimento immagine -->
     <div id="myModal" class="overlay">
@@ -170,6 +473,9 @@
         </div>
     </div>
 
+    <!-- Pulsante torna su -->
+    <button onclick="scrollToTop()" id="scrollTopBtn" title="Torna su">↑</button>
+
     <footer>
         <p>&copy; 2025 Powered by Fabry FVCG</p>
     </footer>
@@ -177,6 +483,11 @@
     <script>
         let currentIndex = -1;
         let images = [];
+        
+        // Variabili per lo swipe
+        let startX = 0;
+        let endX = 0;
+        let threshold = 50;
 
         // Gestione della selezione multipla
         let selectedPhotos = [];
@@ -184,6 +495,9 @@
         const selectionCount = document.getElementById('selectionCount');
         const clearSelectionBtn = document.getElementById('clearSelectionBtn');
         const shareSelectedBtn = document.getElementById('shareSelectedBtn');
+        const modal = document.getElementById("myModal");
+        const body = document.querySelector("body");
+        const originalOverflow = body.style.overflow;
         
         window.onload = function () {
             // Inizializza la visualizzazione delle immagini
@@ -200,27 +514,94 @@
                     photo.insertBefore(selector, photo.firstChild);
                 }
             });
+
+            // Setup eventi touch per swipe sulla modal
+            let startY = 0;
+            let endY = 0;
+
+            modal.addEventListener("touchstart", function(e) {
+                startY = e.touches[0].clientY;
+            }, { passive: true });
+
+            modal.addEventListener("touchmove", function(e) {
+                endY = e.touches[0].clientY;
+            }, { passive: true });
+
+            modal.addEventListener("touchend", function(e) {
+                const diffY = endY - startY;
+
+                if (Math.abs(diffY) > threshold && diffY > 0) {
+                    closeModal();
+                }
+
+                startY = 0;
+                endY = 0;
+            }, { passive: true });
+
+            setupSwipeEvents();
         };
+
+        // Configurazione eventi touch per lo swipe
+        function setupSwipeEvents() {
+            modal.addEventListener("touchstart", function(e) {
+                startX = e.touches[0].clientX;
+            }, { passive: true });
+
+            modal.addEventListener("touchmove", function(e) {
+                endX = e.touches[0].clientX;
+            }, { passive: true });
+
+            modal.addEventListener("touchend", function(e) {
+                const diffX = endX - startX;
+                
+                // Solo se il movimento è abbastanza significativo
+                if (Math.abs(diffX) > threshold) {
+                    if (diffX > 0) {
+                        // Swipe verso destra = immagine precedente
+                        prevImage();
+                    } else {
+                        // Swipe verso sinistra = immagine successiva
+                        nextImage();
+                    }
+                }
+                
+                // Reset delle variabili
+                startX = 0;
+                endX = 0;
+            }, { passive: true });
+
+            // Chiudi modal cliccando fuori dall'immagine
+            modal.addEventListener("click", function(e) {
+                if (e.target === modal) {
+                    closeModal();
+                }
+            });
+        }
+
+        // Gestione scroll
+        function disableScroll() {
+            body.style.overflow = 'hidden';
+        }
+
+        function enableScroll() {
+            body.style.overflow = originalOverflow;
+        }
         
         // Funzione per toggleare la selezione di una foto
         function toggleSelection(photoCard, event) {
-            // Impedisci che il click attivi altre funzioni (come l'apertura del modal)
             event.stopPropagation();
             
             const photoId = photoCard.querySelector("a[href^='/modifica/']").href.split('/').pop();
             const index = selectedPhotos.indexOf(photoId);
             
             if (index === -1) {
-                // Aggiungi alla selezione
                 selectedPhotos.push(photoId);
                 photoCard.classList.add('selected');
             } else {
-                // Rimuovi dalla selezione
                 selectedPhotos.splice(index, 1);
                 photoCard.classList.remove('selected');
             }
             
-            // Aggiorna UI
             updateSelectionUI();
         }
         
@@ -230,7 +611,6 @@
             
             if (selectedPhotos.length > 0) {
                 multiSelectionToolbar.style.display = 'flex';
-                // Disabilita temporaneamente la funzione di click per l'apertura della modal
                 document.querySelectorAll('.selected img').forEach(img => {
                     img.onclick = function(e) {
                         e.stopPropagation();
@@ -239,7 +619,6 @@
                 });
             } else {
                 multiSelectionToolbar.style.display = 'none';
-                // Ripristina la funzione di click per l'apertura della modal
                 document.querySelectorAll('.foto img').forEach(img => {
                     img.onclick = function() {
                         showModal(this);
@@ -249,7 +628,7 @@
         }
         
         // Pulisci la selezione
-        clearSelectionBtn.addEventListener('click', function() {
+        clearSelectionBtn?.addEventListener('click', function() {
             selectedPhotos = [];
             document.querySelectorAll('.photo-card.selected').forEach(photo => {
                 photo.classList.remove('selected');
@@ -258,7 +637,7 @@
         });
         
         // Condividi le foto selezionate
-        shareSelectedBtn.addEventListener('click', function() {
+        shareSelectedBtn?.addEventListener('click', function() {
             if (selectedPhotos.length > 0) {
                 const ids = selectedPhotos.join(',');
                 window.location.href = "{{ url_for('condividi_multiple', ids='') }}" + ids;
@@ -267,13 +646,13 @@
 
         // Funzioni per la visualizzazione delle immagini
         function showModal(img) {
-            const modal = document.getElementById("myModal");
             const modalImg = document.getElementById("img01");
             const metadata = document.getElementById("metadata");
 
             modal.style.display = "flex";
             modalImg.src = img.src;
             currentIndex = images.indexOf(img);
+            disableScroll();
 
             const fotoDiv = img.closest(".foto");
             const titolo = fotoDiv.querySelector("strong")?.innerText || "";
@@ -286,16 +665,14 @@
                 <div><small>${data}</small></div>
             `;
             
-            const baseURL = "http://136.144.220.169:5000";
-            const relativePath = modalImg.src.replace(window.location.origin, "");
-            
             // Imposta il link di condivisione
             document.getElementById("directShare").href = 
                 "{{ url_for('condividi_migliore', id_foto='') }}" + fotoDiv.querySelector("a[href^='/modifica/']").href.split('/').pop();
         }
 
         function closeModal() {
-            document.getElementById("myModal").style.display = "none";
+            modal.style.display = "none";
+            enableScroll();
         }
 
         function nextImage() {
@@ -336,14 +713,57 @@
             const fotoDiv = images[currentIndex].closest(".foto");
             const id_foto = fotoDiv.querySelector("a[href^='/modifica/']").href.split('/').pop();
             
-            // Costruisci l'URL della pagina di condivisione
             const baseURL = window.location.origin;
             const shareURL = baseURL + "{{ url_for('condividi_migliore', id_foto='') }}" + id_foto;
             
-            // Copia negli appunti
             navigator.clipboard.writeText(shareURL);
             alert("Link alla pagina di condivisione copiato negli appunti!");
         }
-    </script>
+
+        // Gestione pulsante "Torna su"
+        window.onscroll = function() {
+            const btn = document.getElementById("scrollTopBtn");
+            if (document.body.scrollTop > 300 || document.documentElement.scrollTop > 300) {
+                btn.style.display = "block";
+            } else {
+                btn.style.display = "none";
+            }
+        };
+
+        function scrollToTop() {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+    function mostraPopup(link) {
+    const box = document.getElementById("popup-link");
+    const anchor = document.getElementById("link-generato");
+    const waBtn = document.getElementById("waShare");
+    const tgBtn = document.getElementById("tgShare");
+    const mailBtn = document.getElementById("emailShare");
+
+    anchor.href = link;
+    anchor.innerText = link;
+
+    const testoCondivisione = encodeURIComponent(`Guarda queste foto: ${link}`);
+    waBtn.href = `https://wa.me/?text=${testoCondivisione}`;
+    tgBtn.href = `https://t.me/share/url?url=${encodeURIComponent(link)}`;
+    mailBtn.href = `mailto:?subject=Condivisione foto&body=${testoCondivisione}`;
+
+    box.style.display = "block";
+}
+
+function copyLink() {
+    const link = document.getElementById("link-generato").href;
+    navigator.clipboard.writeText(link).then(() => {
+        const btn = event.target;
+        const originalText = btn.innerText;
+        btn.innerText = "✅ Copiato!";
+        setTimeout(() => {
+            btn.innerText = originalText;
+        }, 2000);
+    }).catch(() => {
+        alert("Impossibile copiare negli appunti");
+    });
+}
+</script>
 </body>
 </html>

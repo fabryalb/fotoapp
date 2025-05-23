@@ -1,0 +1,58 @@
+
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <title>Foto condivise</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background: #f9f9f9; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; }
+        h1 { color: #750000; }
+        .foto-grid { display: flex; flex-wrap: wrap; gap: 15px; margin-top: 20px; }
+        .foto-card img { max-width: 100%; border: 1px solid #ccc; border-radius: 4px; }
+        .foto-card { width: calc(33% - 10px); }
+        .info-box { margin: 20px 0; padding: 10px; background: #fff3f3; border: 1px solid #750000; border-radius: 6px; }
+        .btn { display: inline-block; padding: 10px 15px; margin: 5px 5px 0 0; background: #750000; color: white; border: none; border-radius: 4px; text-decoration: none; cursor: pointer; }
+        .btn:hover { background: #5e0000; }
+        .link-box { word-break: break-all; padding: 10px; border: 1px dashed #ccc; margin: 10px 0; background: #fafafa; border-radius: 4px; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>📸 Foto condivise</h1>
+
+    {% if condivisione %}
+        <div class="info-box">
+            <p><strong>Titolo:</strong> {{ condivisione['titolo'] }}</p>
+            <p><strong>Condivise da:</strong> {{ condivisione['creatore'] }}</p>
+            <p><strong>Scadenza:</strong> {{ condivisione['scadenza'] }}</p>
+            <p><strong>Accessi:</strong> {{ condivisione['accessi'] }}</p>
+        </div>
+
+        <div class="link-box">
+            🔗 <strong>Link:</strong> <a href="{{ request.url }}" target="_blank">{{ request.url }}</a><br>
+            <button class="btn" onclick="copyLink()">📋 Copia link</button>
+            <a class="btn" href="https://wa.me/?text={{ request.url | urlencode }}" target="_blank">🟢 WhatsApp</a>
+            <a class="btn" href="mailto:?subject=Guarda queste foto&body={{ request.url | urlencode }}" target="_blank">✉️ Email</a>
+        </div>
+    {% endif %}
+
+    <div class="foto-grid">
+        {% for foto in foto_list %}
+        <div class="foto-card">
+            <img src="{{ url_for('serve_foto_condivisa', token=token, foto_id=foto['id']) }}" alt="{{ foto['titolo'] }}">
+            <p>{{ foto['titolo'] }}</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<script>
+function copyLink() {
+    navigator.clipboard.writeText(window.location.href).then(() => {
+        alert("✅ Link copiato!");
+    });
+}
+</script>
+</body>
+</html>

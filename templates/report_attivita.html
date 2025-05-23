@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <title>Report Attività</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        .riepilogo {
+            background: #fff;
+            border: 1px solid #ccc;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+        }
+        h2 {
+            color: #750000;
+        }
+        h4 {
+            color: #555;
+            margin-top: 15px;
+            margin-bottom: 8px;
+        }
+        ul {
+            list-style: none;
+            padding-left: 0;
+        }
+        ul li {
+            margin-bottom: 6px;
+            padding: 4px 8px;
+            background: #f8f9fa;
+            border-radius: 4px;
+        }
+        .intestazione {
+            margin-bottom: 15px;
+            padding: 10px;
+            background: #f0f0f0;
+            border-radius: 6px;
+        }
+        .sezione-eventi {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        .evento-box {
+            background: #fafafa;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            padding: 12px;
+        }
+        .contatore {
+            font-weight: bold;
+            color: #750000;
+        }
+        .login-logout-box {
+            background: #e8f5e8;
+            border: 1px solid #28a745;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Report attività per utente</h1>
+        <nav>
+            <a href="{{ url_for('index') }}" class="btn">Torna alla home</a>
+        </nav>
+    </header>
+
+    <main>
+        {% if messaggio %}
+            <p>{{ messaggio }}</p>
+        {% else %}
+            {% for r in riepiloghi %}
+                <div class="riepilogo">
+                    <div class="intestazione">
+                        <h2>Utente: {{ r.utente }}</h2>
+                        <p><strong>IP utilizzati:</strong> {{ r.ip }}</p>
+                        <p><strong>Primo accesso:</strong> {{ r.primo }}</p>
+                        <p><strong>Ultimo accesso:</strong> {{ r.ultimo }}</p>
+                    </div>
+
+                    <div class="sezione-eventi">
+                        {% if r.login > 0 or r.logout > 0 %}
+                            <div class="evento-box login-logout-box">
+                                <h4>Sessioni:</h4>
+                                <ul>
+                                    {% if r.login > 0 %}
+                                        <li>Login: <span class="contatore">{{ r.login }} volte</span></li>
+                                    {% endif %}
+                                    {% if r.logout > 0 %}
+                                        <li>Logout: <span class="contatore">{{ r.logout }} volte</span></li>
+                                    {% endif %}
+                                </ul>
+                            </div>
+                        {% endif %}
+
+                        {% if r.viste %}
+                            <div class="evento-box">
+                                <h4>Categorie visualizzate:</h4>
+                                <ul>
+                                    {% for cat, count in r.viste.items() %}
+                                        <li>{{ cat }}: <span class="contatore">{{ count }} volte</span></li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                        {% endif %}
+
+                        {% if r.modifiche %}
+                            <div class="evento-box">
+                                <h4>Modifiche effettuate:</h4>
+                                <ul>
+                                    {% for cat, count in r.modifiche.items() %}
+                                        <li>{{ cat }}: <span class="contatore">{{ count }} modifiche</span></li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                        {% endif %}
+
+                        {% if r.aggiunte %}
+                            <div class="evento-box">
+                                <h4>Foto aggiunte:</h4>
+                                <ul>
+                                    {% for cat, count in r.aggiunte.items() %}
+                                        <li>{{ cat }}: <span class="contatore">{{ count }} immagini</span></li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                        {% endif %}
+
+                        {% if r.altri_eventi %}
+                            <div class="evento-box">
+                                <h4>Altri eventi:</h4>
+                                <ul>
+                                    {% for evento, count in r.altri_eventi.items() %}
+                                        <li>{{ evento }}: <span class="contatore">{{ count }} volte</span></li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            {% endfor %}
+        {% endif %}
+    </main>
+
+    <footer>
+        <p>&copy; 2025 Report Attività</p>
+    </footer>
+
+<button onclick="scrollToTop()" id="scrollTopBtn" title="Torna su">↑</button>
+<style>
+#scrollTopBtn {
+    display: none;
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    z-index: 99;
+    font-size: 20px;
+    border: none;
+    outline: none;
+    background-color: #750000;
+    color: white;
+    cursor: pointer;
+    padding: 12px 16px;
+    border-radius: 50%;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+    transition: all 0.3s;
+}
+#scrollTopBtn:hover {
+    background-color: #5a0000;
+}
+</style>
+
+
+<script>
+    window.onscroll = function() {
+        const btn = document.getElementById("scrollTopBtn");
+        if (document.body.scrollTop > 300 || document.documentElement.scrollTop > 300) {
+            btn.style.display = "block";
+        } else {
+            btn.style.display = "none";
+        }
+    };
+    function scrollToTop() {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+</script>
+
+</body>
+</html>

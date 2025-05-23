@@ -3,14 +3,38 @@ import csv, os, json, threading, zipfile, tempfile
 from PIL import Image
 from datetime import datetime
 from werkzeug.utils import secure_filename
+from photo_sharing import init_sharing_routes, gestore_condivisioni
 
 app = Flask(__name__)
 app.secret_key = 'supersegreto'
 BASE_FOLDER = os.path.join('static', 'foto')
 CSV_FILE = 'dati_foto.csv'
 USERS_FILE = 'utenti.csv'
+LOG_FILE = 'log_attivita.csv'
 
+# Crea le cartelle necessarie e il file di log se non esistono
 os.makedirs(BASE_FOLDER, exist_ok=True)
+if not os.path.exists(LOG_FILE):
+    with open(LOG_FILE, 'w', newline='', encoding='utf-8') as f:
+        writer = csv.writer(f, delimiter=';')
+        writer.writerow(['timestamp', 'ip', 'utente', 'evento', 'categoria', 'foto_id'])
+
+
+# Adapter per il foto_manager
+class FotoManagerAdapter:
+    def ottieni_foto_per_id(self, foto_id):
+        tutte = carica_foto()
+        return next((f for f in tutte if f['id'] == str(foto_id)), None)
+
+    def serve_foto(self, foto_id):
+        foto = self.ottieni_foto_per_id(foto_id)
+        if foto:
+            return send_file(os.path.join('static', foto['nome_file']))
+        abort(404)
+
+foto_manager = FotoManagerAdapter()
+init_sharing_routes(app, foto_manager)
+
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
 
 def carica_utenti():
@@ -60,6 +84,15 @@ def salva_foto(foto_list):
         writer = csv.DictWriter(f, fieldnames=fieldnames, delimiter=';')
         writer.writeheader()
         writer.writerows(foto_list)
+
+def log_evento(ip, utente, evento, categoria='', foto_id=''):
+    log_path = 'log_attivita.csv'
+    timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+
+    with open(log_path, 'a', newline='', encoding='utf-8') as f:
+        writer = csv.writer(f, delimiter=';')
+        writer.writerow([timestamp, ip, utente, evento, categoria, foto_id])
+
 
 def genera_nuovo_id():
     """Genera un nuovo ID unico per una foto"""
@@ -129,12 +162,9 @@ import csv, os, json, threading, zipfile, tempfile
 from PIL import Image, ExifTags
 from datetime import datetime
 from werkzeug.utils import secure_filename
+from photo_sharing import init_sharing_routes, gestore_condivisioni
 
-app = Flask(__name__)
-app.secret_key = 'supersegreto'
-BASE_FOLDER = os.path.join('static', 'foto')
-CSV_FILE = 'dati_foto.csv'
-USERS_FILE = 'utenti.csv'
+
 
 os.makedirs(BASE_FOLDER, exist_ok=True)
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
@@ -210,7 +240,7 @@ def index():
     
     return render_template('index.html', categorie=categorie_old, categorie_principali=categorie_principali)
 
-@app.route('/categoria/<nome>')
+@app.route('/categoria/<path:nome>')
 def mostra_categoria(nome):
     if session.get('username') and not utente_ha_permesso(nome, 'visualizza'):
         flash("Non hai i permessi per visualizzare questa categoria")
@@ -218,8 +248,9 @@ def mostra_categoria(nome):
     
     sort_by = request.args.get('sort', 'default')
     tutte = carica_foto()
+    
+    # Trova le foto dirette di questa categoria
     foto_categoria = []
-
     for f in [f for f in tutte if f['categoria'] == nome]:
         try:
             data_formattata = formatta_data(f['data'])
@@ -243,6 +274,7 @@ def mostra_categoria(nome):
             'id_numerico': int(f['id'])
         })
     
+    # Applica ordinamento
     if sort_by == 'data':
         foto_categoria.sort(key=lambda x: x['data_raw'], reverse=True)
     elif sort_by == 'inserimento':
@@ -252,6 +284,7 @@ def mostra_categoria(nome):
     elif sort_by == 'exif':
         foto_categoria.sort(key=lambda x: (x['exif_date'] is None, x['exif_date'] if x['exif_date'] else ''), reverse=True)
 
+    # Prepara le foto per il template (formato compatibile)
     foto_template = []
     for f in foto_categoria:
         foto_template.append([
@@ -263,38 +296,61 @@ def mostra_categoria(nome):
             f['categoria']
         ])
 
-    return render_template('categoria.html', nome=nome, foto=foto_template, sort_by=sort_by)
+    # NUOVA PARTE: Trova le sottocategorie
+    sottocategorie = []
+    
+    # Cerca tutte le categorie che iniziano con questo nome + separatore
+    prefisso_slash = nome + "/"
+    prefisso_maggiore = nome + ">"
+    
+    categorie_trovate = set()
+    for f in tutte:
+        cat = f['categoria']
+        if cat.startswith(prefisso_slash) or cat.startswith(prefisso_maggiore):
+            categorie_trovate.add(cat)
+    
+    # Per ogni sottocategoria trovata, conta le foto e prepara i dati
+    for categoria_completa in sorted(categorie_trovate):
+        # Estrai il nome della sottocategoria
+        if '/' in categoria_completa:
+            nome_breve = categoria_completa.split('/', 1)[1].strip()
+        elif '>' in categoria_completa:
+            nome_breve = categoria_completa.split('>', 1)[1].strip()
+        else:
+            continue
+        
+        # Trova tutte le foto di questa sottocategoria
+        foto_sottocategoria = [f for f in tutte if f['categoria'] == categoria_completa]
+        num_foto = len(foto_sottocategoria)
+        
+        # Trova la foto copertina (se esiste)
+        foto_copertina = None
+        for f in foto_sottocategoria:
+            if f.get('copertina', '').strip().lower() in ('1', 'si', 'sì', 'true'):
+                foto_copertina = f
+                break
+        
+        # Se non c'è una copertina specifica, prendi la prima foto
+        if not foto_copertina and foto_sottocategoria:
+            foto_copertina = foto_sottocategoria[0]
+        
+        # Aggiungi alla lista solo se ci sono foto e l'utente ha i permessi
+        if num_foto > 0 and (not session.get('username') or utente_ha_permesso(categoria_completa, 'visualizza')):
+            sottocategorie.append({
+                'categoria_completa': categoria_completa,
+                'nome_breve': nome_breve,
+                'num_foto': num_foto,
+                'foto_copertina': foto_copertina
+            })
 
-    # Verifica permessi di visualizzazione
-    if session.get('username') and not utente_ha_permesso(nome, 'visualizza'):
-        flash("Non hai i permessi per visualizzare questa categoria")
-        return redirect(url_for('index'))
-    
-    tutte = carica_foto()
-    foto_categoria = []
-    
-    # Prepara i dati nel formato atteso dal template
-    for f in [f for f in tutte if f['categoria'] == nome]:
-        try:
-            data_formattata = formatta_data(f['data'])
-        except Exception:
-            data_formattata = f['data']
-            
-        # Aggiungi foto nel formato che si aspetta il template
-        foto_categoria.append([
-            f['id'],                # ID
-            f['titolo'],            # Titolo
-            f['descrizione'],       # Descrizione
-            data_formattata,        # Data formattata
-            f['nome_file'],         # Percorso immagine
-            f['categoria']          # Categoria
-        ])
-    
-    return render_template('categoria.html', nome=nome, foto=foto_categoria)
+    return render_template('categoria.html', 
+                         nome=nome, 
+                         foto=foto_template, 
+                         sort_by=sort_by,
+                         sottocategorie=sottocategorie)
 
 @app.route('/modifica/<id_foto>', methods=['GET', 'POST'])
 def modifica(id_foto):
-    # Verifica autenticazione
     if not session.get('username'):
         flash("Devi effettuare il login per modificare le foto")
         return redirect(url_for('login'))
@@ -306,7 +362,6 @@ def modifica(id_foto):
         flash("Foto non trovata")
         return redirect(url_for('index'))
     
-    # Verifica permessi di modifica
     if not utente_ha_permesso(foto_dict['categoria'], 'modifica'):
         flash("Non hai i permessi per modificare questa foto")
         return redirect(url_for('mostra_categoria', nome=foto_dict['categoria']))
@@ -314,7 +369,6 @@ def modifica(id_foto):
     if request.method == 'POST':
         modificato = False
         
-        # Aggiorna i campi
         if request.form.get('titolo'):
             foto_dict['titolo'] = request.form.get('titolo')
             modificato = True
@@ -331,7 +385,6 @@ def modifica(id_foto):
             foto_dict['categoria'] = request.form.get('categoria')
             modificato = True
         
-        # Rotazione immagine
         if 'ruota90' in request.form:
             path_locale = os.path.join("static", foto_dict['nome_file'])
             ruota_immagine(path_locale)
@@ -339,13 +392,13 @@ def modifica(id_foto):
         
         if modificato:
             salva_foto(tutte)
+            log_evento(request.remote_addr, session['username'], 'modifica', foto_dict['categoria'], id_foto)
             flash("Modifica effettuata con successo")
         else:
             flash("Nessuna modifica effettuata")
         
         return redirect(url_for('mostra_categoria', nome=foto_dict['categoria']))
     
-    # Converti in formato atteso dal template
     foto = {
         'ID': foto_dict['id'],
         'Titolo': foto_dict['titolo'],
@@ -355,35 +408,28 @@ def modifica(id_foto):
         'Categoria': foto_dict['categoria']
     }
     
-    # Carica categorie disponibili per il menu a tendina
     categorie = sorted(set(f['categoria'] for f in tutte))
     return render_template('modifica.html', foto=foto, categorie=categorie)
 
 @app.route('/aggiungi', methods=['GET', 'POST'])
 def aggiungi():
-    # Verifica autenticazione
     if not session.get('username'):
         flash("Devi effettuare il login per aggiungere foto")
         return redirect(url_for('login'))
     
     tutte = carica_foto()
-    
-    # Ottieni le categorie con permessi di aggiunta
     categorie_permesse = categorie_con_permesso('aggiungi')
     
-    # Se l'utente ha restrizioni ma non ha categorie disponibili
     if categorie_permesse is not None and not categorie_permesse:
         flash("Non hai i permessi per aggiungere foto")
         return redirect(url_for('index'))
     
-    # Filtra le categorie esistenti in base ai permessi
     categorie_esistenti = sorted(set(f['categoria'] for f in tutte))
     if categorie_permesse is not None:
         categorie_disponibili = [c for c in categorie_esistenti if c in categorie_permesse]
     else:
         categorie_disponibili = categorie_esistenti
     
-    # Analizza le categorie per creare la struttura gerarchica
     struttura_categorie = {}
     categorie_principali = []
     
@@ -414,7 +460,6 @@ def aggiungi():
         descrizione = request.form.get('descrizione', '').strip()
         data = request.form.get('data', '').strip()
         
-        
         tipo_categoria = request.form.get("tipo_categoria")
         categoria = ""
 
@@ -432,13 +477,10 @@ def aggiungi():
         if categoria:
             categoria = categoria.strip().replace(" > ", "/").replace(" / ", "/")
 
-
-        # Controlla permessi per la categoria
         if categorie_permesse is not None and categoria not in categorie_permesse:
             flash(f"Non hai i permessi per aggiungere foto nella categoria {categoria}")
             return redirect(url_for('aggiungi'))
         
-        # Usa la data corrente se non specificata
         if not data:
             data = datetime.today().strftime('%Y-%m-%d')
         
@@ -450,7 +492,6 @@ def aggiungi():
                 folder = os.path.join(BASE_FOLDER, categoria)
                 os.makedirs(folder, exist_ok=True)
                 
-                # Gestione nomi duplicati
                 base, ext = os.path.splitext(filename)
                 counter = 1
                 save_path = os.path.join(folder, filename)
@@ -459,18 +500,13 @@ def aggiungi():
                     save_path = os.path.join(folder, filename)
                     counter += 1
                 
-                # Salva e ottimizza l'immagine
                 img = Image.open(file)
                 img.thumbnail((1024, 1024))
                 img.save(save_path, optimize=True, quality=85)
                 
-                # Calcola peso file
                 peso_kb = os.path.getsize(save_path) // 1024
-                
-                # Percorso relativo per il database
                 relative_path = f"foto/{categoria}/{filename}"
                 
-                # Aggiungi alla lista di foto
                 tutte.append({
                     'id': str(nuovo_id),
                     'titolo': titolo,
@@ -481,16 +517,17 @@ def aggiungi():
                     'peso_file': str(peso_kb),
                     'copertina': ''
                 })
+                
+                log_evento(request.remote_addr, session['username'], 'aggiungi', categoria, str(nuovo_id))
         
-        # Salva le modifiche
         salva_foto(tutte)
         flash("Le foto sono state caricate con successo")
         return redirect(url_for('index'))
     
     return render_template('aggiungi.html', 
-                          categorie=categorie_disponibili, 
-                          struttura_categorie=struttura_categorie, 
-                          categorie_principali=categorie_principali)
+                         categorie=categorie_disponibili, 
+                         struttura_categorie=struttura_categorie, 
+                         categorie_principali=categorie_principali)
 
 @app.route('/upload_massivo', methods=['GET', 'POST'])
 def upload_massivo():
@@ -515,7 +552,6 @@ def upload_massivo():
                 folder = os.path.join(BASE_FOLDER, categoria)
                 os.makedirs(folder, exist_ok=True)
 
-                # Gestione nomi duplicati
                 base, ext = os.path.splitext(filename)
                 counter = 1
                 save_path = os.path.join(folder, filename)
@@ -551,7 +587,6 @@ def upload_massivo():
 
 @app.route('/elimina/<id_foto>')
 def elimina(id_foto):
-    # Verifica autenticazione
     if not session.get('username'):
         flash("Devi effettuare il login per eliminare le foto")
         return redirect(url_for('login'))
@@ -563,31 +598,27 @@ def elimina(id_foto):
         flash("Foto non trovata")
         return redirect(url_for('index'))
     
-    # Verifica permessi di eliminazione
     if not utente_ha_permesso(foto['categoria'], 'elimina'):
         flash("Non hai i permessi per eliminare questa foto")
         return redirect(url_for('mostra_categoria', nome=foto['categoria']))
     
-    # Rimuovi il file fisico
     path = os.path.join('static', foto['nome_file'])
     if os.path.exists(path):
         os.remove(path)
     
-    # Aggiorna il database
     tutte = [f for f in tutte if f['id'] != id_foto]
     salva_foto(tutte)
     
+    log_evento(request.remote_addr, session['username'], 'elimina', foto['categoria'], id_foto)
     flash("Foto eliminata con successo")
     return redirect(url_for('mostra_categoria', nome=foto['categoria']))
 
 @app.route('/elimina_categoria/<nome>')
 def elimina_categoria(nome):
-    # Verifica autenticazione
     if not session.get('username'):
         flash("Devi effettuare il login per eliminare categorie")
         return redirect(url_for('login'))
     
-    # Verifica permessi di eliminazione categoria
     if not utente_ha_permesso(nome, 'elimina'):
         flash("Non hai i permessi per eliminare questa categoria")
         return redirect(url_for('index'))
@@ -595,21 +626,19 @@ def elimina_categoria(nome):
     tutte = carica_foto()
     nuove = [f for f in tutte if f['categoria'] != nome]
     
-    # Elimina la cartella fisica
     cartella = os.path.join(BASE_FOLDER, nome)
     if os.path.exists(cartella):
         import shutil
         shutil.rmtree(cartella)
     
-    # Aggiorna il database
     salva_foto(nuove)
     
+    log_evento(request.remote_addr, session['username'], 'elimina_categoria', nome)
     flash("Categoria eliminata con successo")
     return redirect(url_for('index'))
 
 @app.route('/copertina/<id_foto>')
 def imposta_copertina(id_foto):
-    # Verifica autenticazione
     if not session.get('username'):
         flash("Devi effettuare il login per impostare la copertina")
         return redirect(url_for('login'))
@@ -621,24 +650,21 @@ def imposta_copertina(id_foto):
         flash("Foto non trovata")
         return redirect(url_for('index'))
     
-    # Verifica permessi di modifica
     if not utente_ha_permesso(foto['categoria'], 'modifica'):
         flash("Non hai i permessi per modificare questa categoria")
         return redirect(url_for('mostra_categoria', nome=foto['categoria']))
     
     categoria = foto['categoria']
     
-    # Rimuove il flag da tutte le foto della stessa categoria
     for f in tutte:
         if f['categoria'] == categoria:
             f['copertina'] = ''
     
-    # Imposta questa foto come copertina
     foto['copertina'] = '1'
     
-    # Salva le modifiche
     salva_foto(tutte)
     
+    log_evento(request.remote_addr, session['username'], 'imposta_copertina', categoria, id_foto)
     flash("Copertina impostata correttamente")
     return redirect(url_for('mostra_categoria', nome=categoria))
 
@@ -654,9 +680,11 @@ def login():
                 session['username'] = username
                 session['ruolo'] = utente['ruolo']
                 session['permessi'] = json.loads(utente['permessi']) if isinstance(utente['permessi'], str) and utente['permessi'].startswith('{') else utente['permessi']
+                log_evento(request.remote_addr, username, 'login')
                 flash(f"Benvenuto, {username}!")
                 return redirect(url_for('index'))
         
+        log_evento(request.remote_addr, username, 'tentativo_login_fallito')
         flash("Username o password non validi")
     
     return render_template('login.html')
@@ -664,6 +692,8 @@ def login():
 @app.route('/logout')
 def logout():
     username = session.get('username', '')
+    if username:
+        log_evento(request.remote_addr, username, 'logout')
     session.clear()
     flash(f"Arrivederci, {username}!")
     return redirect(url_for('index'))
@@ -780,8 +810,6 @@ def aggiorna_permessi(username):
     
     flash("Permessi aggiornati con successo")
     return redirect(url_for('gestione_utenti'))
-
-# Funzioni da aggiungere al file app.py
 
 @app.route('/crea_utente', methods=['POST'])
 def crea_utente():
@@ -994,7 +1022,6 @@ def condividi_migliore(id_foto):
     
     return render_template('condividi_migliore.html', foto=foto_formattata)
 
-
 @app.route('/condividi_multiple/<ids>')
 def condividi_multiple(ids):
     """Pagina di condivisione per più foto contemporaneamente"""
@@ -1087,8 +1114,6 @@ def download_zip(ids):
         except:
             pass  # Ignora eventuali errori nella rimozione
 
-
-
 @app.route('/ricerca', methods=['GET'])
 def ricerca():
     """Pagina di ricerca foto semplificata"""
@@ -1158,86 +1183,6 @@ def ricerca():
                           categorie=categorie,
                           num_risultati=len(risultati))
 
-    tutte = carica_foto()
-    risultati = []
-
-    for foto in tutte:
-        if not (utente_ha_permesso(foto['categoria'], 'visualizza') or not session.get('username')):
-            continue
-
-        match = True
-        if query:
-            testo_foto = (
-                foto['titolo'].lower() + ' ' + 
-                foto['descrizione'].lower() + ' ' + 
-                foto['categoria'].lower() + ' ' + 
-                foto['nome_file'].lower()
-            )
-            query_parts = query.split()
-            for part in query_parts:
-                if part not in testo_foto:
-                    match = False
-                    break
-
-        if match and categoria and categoria != 'tutte':
-            if not foto['categoria'].startswith(categoria):
-                match = False
-
-        if match and data_inizio:
-            try:
-                data_foto = datetime.strptime(foto['data'], '%Y-%m-%d').date()
-                data_min = datetime.strptime(data_inizio, '%Y-%m-%d').date()
-                if data_foto < data_min:
-                    match = False
-            except ValueError:
-                pass
-
-        if match and data_fine:
-            try:
-                data_foto = datetime.strptime(foto['data'], '%Y-%m-%d').date()
-                data_max = datetime.strptime(data_fine, '%Y-%m-%d').date()
-                if data_foto > data_max:
-                    match = False
-            except ValueError:
-                pass
-
-        if match:
-            try:
-                data_formattata = formatta_data(foto['data'])
-            except:
-                data_formattata = foto['data']
-
-            if '/' in foto['categoria']:
-                cat_princ, cat_sec = foto['categoria'].split('/', 1)
-                cat_display = f"{cat_princ} / {cat_sec}"
-            elif '>' in foto['categoria']:
-                cat_princ, cat_sec = foto['categoria'].split('>', 1)
-                cat_display = f"{cat_princ} > {cat_sec}"
-            else:
-                cat_display = foto['categoria']
-
-            risultati.append({
-                'id': foto['id'],
-                'titolo': foto['titolo'],
-                'descrizione': foto['descrizione'],
-                'data': data_formattata,
-                'nome_file': foto['nome_file'],
-                'categoria': foto['categoria'],
-                'categoria_display': cat_display
-            })
-
-    risultati.sort(key=lambda x: x['data'], reverse=True)
-    categorie = sorted(set(f['categoria'] for f in tutte))
-
-    return render_template('ricerca.html',
-                          risultati=risultati,
-                          query=query,
-                          categoria=categoria,
-                          data_inizio=data_inizio,
-                          data_fine=data_fine,
-                          categorie=categorie,
-                          num_risultati=len(risultati))
-
 @app.route('/api/search_suggestions', methods=['GET'])
 def search_suggestions():
     """API per fornire suggerimenti di auto-completamento per la ricerca"""
@@ -1263,7 +1208,6 @@ def search_suggestions():
 
     suggestions = sorted(list(words))[:10]
     return jsonify(suggestions)
-
 
 @app.route('/download_search_results')
 def download_search_results():
@@ -1383,8 +1327,129 @@ def download_search_results():
         except:
             pass
 
-if __name__ == '__main__':
-    app.run(debug=False, host='0.0.0.0', port=int(os.environ.get("PORT", 5000)))
+@app.route('/report_attivita')
+def report_attivita():
+    if not session.get('username') or session.get('ruolo') != 'admin':
+        flash("Solo l'amministratore può accedere al report attività")
+        return redirect(url_for('index'))
+
+    log_path = 'log_attivita.csv'
+    if not os.path.exists(log_path):
+        return render_template('report_attivita.html', riepiloghi=[], messaggio="Nessuna attività registrata.")
+
+    riepilogo_per_utente = {}
+
+    with open(log_path, newline='', encoding='utf-8') as f:
+        reader = csv.reader(f, delimiter=';')
+        # Salta l'intestazione se presente
+        first_row = next(reader, None)
+        if first_row and first_row[0] == 'timestamp':
+            pass  # Era l'intestazione, continua
+        else:
+            # Non era l'intestazione, processa questa riga
+            if first_row and len(first_row) >= 4:
+                timestamp, ip, utente, evento = first_row[:4]
+                categoria = first_row[4] if len(first_row) > 4 else ''
+                foto_id = first_row[5] if len(first_row) > 5 else ''
+                
+                # Processa solo se utente non è vuoto e non è "utente"
+                if utente and utente != 'utente':
+                    if utente not in riepilogo_per_utente:
+                        riepilogo_per_utente[utente] = {
+                            'ip_utilizzati': set(),
+                            'primo_accesso': timestamp,
+                            'ultimo_accesso': timestamp,
+                            'viste': {},
+                            'modifiche': {},
+                            'aggiunte': {},
+                            'login': 0,
+                            'logout': 0,
+                            'altri_eventi': {}
+                        }
+
+                    r = riepilogo_per_utente[utente]
+                    r['ip_utilizzati'].add(ip)
+                    r['primo_accesso'] = min(r['primo_accesso'], timestamp)
+                    r['ultimo_accesso'] = max(r['ultimo_accesso'], timestamp)
+
+                    # Categorizza l'evento
+                    if evento == 'visualizza' and categoria:
+                        r['viste'][categoria] = r['viste'].get(categoria, 0) + 1
+                    elif evento == 'modifica' and categoria:
+                        r['modifiche'][categoria] = r['modifiche'].get(categoria, 0) + 1
+                    elif evento == 'aggiungi' and categoria:
+                        r['aggiunte'][categoria] = r['aggiunte'].get(categoria, 0) + 1
+                    elif evento == 'login':
+                        r['login'] += 1
+                    elif evento == 'logout':
+                        r['logout'] += 1
+                    else:
+                        # Altri eventi (elimina, copertina, ecc.)
+                        evento_key = f"{evento}_{categoria}" if categoria else evento
+                        r['altri_eventi'][evento_key] = r['altri_eventi'].get(evento_key, 0) + 1
+        
+        # Processa le righe rimanenti
+        for row in reader:
+            if len(row) < 4:
+                continue
+            timestamp, ip, utente, evento = row[:4]
+            categoria = row[4] if len(row) > 4 else ''
+            foto_id = row[5] if len(row) > 5 else ''
+
+            # Processa solo se utente non è vuoto e non è "utente"
+            if utente and utente != 'utente':
+                if utente not in riepilogo_per_utente:
+                    riepilogo_per_utente[utente] = {
+                        'ip_utilizzati': set(),
+                        'primo_accesso': timestamp,
+                        'ultimo_accesso': timestamp,
+                        'viste': {},
+                        'modifiche': {},
+                        'aggiunte': {},
+                        'login': 0,
+                        'logout': 0,
+                        'altri_eventi': {}
+                    }
+
+                r = riepilogo_per_utente[utente]
+                r['ip_utilizzati'].add(ip)
+                r['primo_accesso'] = min(r['primo_accesso'], timestamp)
+                r['ultimo_accesso'] = max(r['ultimo_accesso'], timestamp)
+
+                # Categorizza l'evento
+                if evento == 'visualizza' and categoria:
+                    r['viste'][categoria] = r['viste'].get(categoria, 0) + 1
+                elif evento == 'modifica' and categoria:
+                    r['modifiche'][categoria] = r['modifiche'].get(categoria, 0) + 1
+                elif evento == 'aggiungi' and categoria:
+                    r['aggiunte'][categoria] = r['aggiunte'].get(categoria, 0) + 1
+                elif evento == 'login':
+                    r['login'] += 1
+                elif evento == 'logout':
+                    r['logout'] += 1
+                else:
+                    # Altri eventi (elimina, copertina, ecc.)
+                    evento_key = f"{evento}_{categoria}" if categoria else evento
+                    r['altri_eventi'][evento_key] = r['altri_eventi'].get(evento_key, 0) + 1
+
+    # Prepara lista ordinata per il template
+    riepiloghi = []
+    for utente, dati in riepilogo_per_utente.items():
+        riepiloghi.append({
+            'utente': utente,
+            'ip': ', '.join(sorted(dati['ip_utilizzati'])),
+            'primo': dati['primo_accesso'],
+            'ultimo': dati['ultimo_accesso'],
+            'viste': dati['viste'],
+            'modifiche': dati['modifiche'],
+            'aggiunte': dati['aggiunte'],
+            'login': dati['login'],
+            'logout': dati['logout'],
+            'altri_eventi': dati['altri_eventi']
+        })
+
+    return render_template('report_attivita.html', riepiloghi=riepiloghi, messaggio=None)
+
 def extract_exif_date(image_path):
     """Estrae la data EXIF da un'immagine"""
     try:
@@ -1406,3 +1471,9 @@ def extract_exif_date(image_path):
 
     return None
 
+if __name__ == '__main__':
+    def avvia_flask():
+        app.run(debug=True, host='0.0.0.0', port=5000, use_reloader=False)
+    
+    threading.Thread(target=avvia_flask, daemon=True).start()
+    input("✅ Server avviato. Premi INVIO per chiudere...")

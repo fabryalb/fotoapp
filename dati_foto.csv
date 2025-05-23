@@ -91,12 +91,11 @@ id;titolo;descrizione;data;nome_file;categoria;peso_file;copertina
 609;Bellanova;2023/24;18/05/2025;foto/Maglie Toro/bellanova.jpeg;Maglie Toro;97;
 610;Crippa;1998/99;18/05/2025;foto/Maglie Toro/crippa_retro.jpeg;Maglie Toro;98;
 611;Crippa;1998/99;18/05/2025;foto/Maglie Toro/crippa.jpeg;Maglie Toro;93;
-519;ODU;;11/05/2025;foto/max/toro_blu_odu.jpeg;max;30;
-520;L’ultimo;;11/05/2025;foto/Bruno/img_1674.jpeg;Bruno;238;
-511;Livorno;La Mia Livorno!!!;10/05/2025;foto/Daniele/livorno.jpg;Daniele;163;
+520;L’ultimo!;;11/05/2025;foto/Bruno/img_1674.jpeg;Bruno;238;
+511;Livorno;La Mia Livorno;10/05/2025;foto/Daniele/livorno.jpg;Daniele;163;
 171;il mio posto sul mare;60x75;05/05/2025;foto/Bruno/1-il mio posto sul mare 60x75.JPG;Bruno;;
 172;scozia;45x70;05/05/2025;foto/Bruno/10-scozia 45x70.JPG;Bruno;;
-173;100 La natura si specchia;70x100;05/05/2025;foto/Bruno/100 La natura si specchia 70x100.JPG;Bruno;;
+173;100 La natura si specchia;70x100;05/05/2025;foto/Bruno/100 La natura si specchia 70x100.JPG;Bruno;;1
 174;101 Iris;40x60;05/05/2025;foto/Bruno/101 Iris 40x60.JPG;Bruno;;
 175;102 Spiaggia;50x60;05/05/2025;foto/Bruno/102 Spiaggia 50x60.JPG;Bruno;;
 176;103 Tetti bianchi;65x45;05/05/2025;foto/Bruno/103 Tetti bianchi 65x45.JPG;Bruno;;
@@ -462,7 +461,7 @@ id;titolo;descrizione;data;nome_file;categoria;peso_file;copertina
 148;Foto;;03/05/2025;foto/Bruno/img_1636.jpeg;Bruno;;
 120;Cin;;02/05/2025;foto/TORO/IMG_1622.jpeg;TORO;;
 47;astratti;;02/05/2025;foto/Bruno/DSC_0114.jpg;Bruno;;
-48;astratti;;02/05/2025;foto/Bruno/DSC_0115.jpg;Bruno;;1
+48;astratti;;02/05/2025;foto/Bruno/DSC_0115.jpg;Bruno;;
 49;astratti;;02/05/2025;foto/Bruno/DSC_0117.jpg;Bruno;1.0;
 18;Un brindisi;;01/05/2025;foto/TORO/IMG_1609.jpeg;TORO;;
 21;Stadio;Toro Udinese;23/04/2025;foto/TORO/IMG_1583.jpeg;TORO;1.0;
@@ -474,3 +473,6 @@ id;titolo;descrizione;data;nome_file;categoria;peso_file;copertina
 32;50 anni superga;1999;04/05/1999;foto/TORO/50_anni_superga_2.JPEG;TORO;;
 33;50 anni superga;;04/05/1999;foto/TORO/50_anni_superga.JPEG;TORO;;
 17;Bilbao;risultato finale Bilbao;;foto/TORO/IMG_3452.JPG;TORO;;1
+612;;;2025-05-22;foto/Maglie Toro/Riedizioni/50_anni_superga_2.jpeg;Maglie Toro/Riedizioni;26;1
+613;;;2025-05-22;foto/Maglie Toro/Riedizioni/50_anni_superga.jpeg;Maglie Toro/Riedizioni;27;
+614;Coccarda;;2025-05-23;foto/Max/0a25caa9-b78c-42ff-a05f-55c4fcb76dda.jpeg;Max;108;
