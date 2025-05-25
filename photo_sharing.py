@@ -16,6 +16,7 @@ class GestoreCondivisioni:
         """Crea il file CSV se non esiste"""
         if not os.path.exists(self.csv_path):
             os.makedirs(os.path.dirname(self.csv_path), exist_ok=True)
+            print('📁 CSV path usato da Flask:', os.path.abspath(self.csv_path))
             with open(self.csv_path, 'w', newline='', encoding='utf-8') as f:
                 writer = csv.writer(f)
                 writer.writerow(['token', 'foto_ids', 'scadenza', 'creatore', 'titolo', 'creato_il', 'accessi', 'attivo'])
@@ -33,6 +34,7 @@ class GestoreCondivisioni:
         creato_il = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         
         # Salva nel CSV
+        print('📁 CSV path usato da Flask:', os.path.abspath(self.csv_path))
         with open(self.csv_path, 'a', newline='', encoding='utf-8') as f:
             writer = csv.writer(f)
             writer.writerow([
@@ -49,14 +51,22 @@ class GestoreCondivisioni:
         return token
     
     def valida_token(self, token):
+        import os
+        print('📁 Percorso assoluto CSV usato da valida_token:', os.path.abspath(self.csv_path))
         """Verifica la validità del token"""
         try:
+            print('📁 CSV path usato da Flask:', os.path.abspath(self.csv_path))
             with open(self.csv_path, 'r', encoding='utf-8') as f:
+                print('🔍 Sto cercando il token:', token)
                 reader = csv.DictReader(f)
                 for row in reader:
+                    print('👉 Riga CSV trovata:', row['token'])
                     if row['token'] == token and row['attivo'] == '1':
                         # Verifica scadenza
-                        scadenza = datetime.strptime(row['scadenza'], '%Y-%m-%d %H:%M:%S')
+                        try:
+                            scadenza = datetime.strptime(row['scadenza'], '%Y-%m-%d %H:%M:%S')
+                        except ValueError:
+                            scadenza = datetime.strptime(row['scadenza'], '%Y-%m-%d')
                         if datetime.now() <= scadenza:
                             return row
             return None
@@ -68,6 +78,7 @@ class GestoreCondivisioni:
         """Incrementa il contatore degli accessi"""
         rows = []
         try:
+            print('📁 CSV path usato da Flask:', os.path.abspath(self.csv_path))
             with open(self.csv_path, 'r', encoding='utf-8') as f:
                 reader = csv.DictReader(f)
                 rows = list(reader)
@@ -79,6 +90,7 @@ class GestoreCondivisioni:
                     break
             
             # Riscrive il file
+            print('📁 CSV path usato da Flask:', os.path.abspath(self.csv_path))
             with open(self.csv_path, 'w', newline='', encoding='utf-8') as f:
                 fieldnames = ['token', 'foto_ids', 'scadenza', 'creatore', 'titolo', 'creato_il', 'accessi', 'attivo']
                 writer = csv.DictWriter(f, fieldnames=fieldnames)
@@ -100,6 +112,7 @@ class GestoreCondivisioni:
         """Disattiva un token (solo il creatore può farlo)"""
         rows = []
         try:
+            print('📁 CSV path usato da Flask:', os.path.abspath(self.csv_path))
             with open(self.csv_path, 'r', encoding='utf-8') as f:
                 reader = csv.DictReader(f)
                 rows = list(reader)
@@ -109,6 +122,7 @@ class GestoreCondivisioni:
                     row['attivo'] = '0'
                     break
             
+            print('📁 CSV path usato da Flask:', os.path.abspath(self.csv_path))
             with open(self.csv_path, 'w', newline='', encoding='utf-8') as f:
                 fieldnames = ['token', 'foto_ids', 'scadenza', 'creatore', 'titolo', 'creato_il', 'accessi', 'attivo']
                 writer = csv.DictWriter(f, fieldnames=fieldnames)
@@ -124,6 +138,7 @@ class GestoreCondivisioni:
         """Restituisce tutte le condivisioni create da un utente"""
         condivisioni = []
         try:
+            print('📁 CSV path usato da Flask:', os.path.abspath(self.csv_path))
             with open(self.csv_path, 'r', encoding='utf-8') as f:
                 reader = csv.DictReader(f)
                 for row in reader:
@@ -158,6 +173,7 @@ def init_sharing_routes(app, foto_manager):
                 foto_condivise.append(foto)
         
         # Ottieni informazioni sulla condivisione
+        print('✅ Token ricevuto nella route /condividi_token:', token)
         condivisione = gestore_condivisioni.valida_token(token)
         
         return render_template('condividi_token.html', 

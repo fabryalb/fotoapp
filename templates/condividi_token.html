@@ -1,58 +1,451 @@
-
 <!DOCTYPE html>
 <html lang="it">
 <head>
     <meta charset="UTF-8">
-    <title>Foto condivise</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Foto Condivise{% if condivisione.titolo %} - {{ condivisione.titolo }}{% endif %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <style>
-        body { font-family: Arial, sans-serif; padding: 20px; background: #f9f9f9; }
-        .container { max-width: 900px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; }
-        h1 { color: #750000; }
-        .foto-grid { display: flex; flex-wrap: wrap; gap: 15px; margin-top: 20px; }
-        .foto-card img { max-width: 100%; border: 1px solid #ccc; border-radius: 4px; }
-        .foto-card { width: calc(33% - 10px); }
-        .info-box { margin: 20px 0; padding: 10px; background: #fff3f3; border: 1px solid #750000; border-radius: 6px; }
-        .btn { display: inline-block; padding: 10px 15px; margin: 5px 5px 0 0; background: #750000; color: white; border: none; border-radius: 4px; text-decoration: none; cursor: pointer; }
-        .btn:hover { background: #5e0000; }
-        .link-box { word-break: break-all; padding: 10px; border: 1px dashed #ccc; margin: 10px 0; background: #fafafa; border-radius: 4px; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: #f0f0f0;
+            margin: 0;
+            padding: 0;
+        }
+        
+        .header {
+            background: white;
+            padding: 20px 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+        
+        h1 {
+            color: #750000;
+            margin: 0;
+            font-size: 2rem;
+        }
+        
+        .content-wrapper {
+            display: flex;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+        
+        .main-content {
+            flex: 1;
+            background: white;
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .sidebar {
+            width: 350px;
+        }
+        
+        .info-card {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .info-card h3 {
+            margin: 0 0 15px 0;
+            color: #333;
+            font-size: 1.1rem;
+        }
+        
+        .info-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        
+        .info-item:last-child {
+            border-bottom: none;
+        }
+        
+        .info-label {
+            color: #666;
+            font-size: 0.9rem;
+        }
+        
+        .info-value {
+            color: #333;
+            font-weight: 500;
+        }
+        
+        .share-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 6px;
+            text-decoration: none;
+            font-size: 0.95rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            flex: 1;
+            justify-content: center;
+            min-width: 120px;
+        }
+        
+        .btn-primary {
+            background: #750000;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #5a0000;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(117, 0, 0, 0.3);
+        }
+        
+        .btn-whatsapp {
+            background: #25D366;
+            color: white;
+        }
+        
+        .btn-whatsapp:hover {
+            background: #128C7E;
+        }
+        
+        .btn-telegram {
+            background: #0088cc;
+            color: white;
+        }
+        
+        .btn-telegram:hover {
+            background: #006699;
+        }
+        
+        .btn-email {
+            background: #EA4335;
+            color: white;
+        }
+        
+        .btn-email:hover {
+            background: #C5221F;
+        }
+        
+        .btn-copy {
+            background: #666;
+            color: white;
+        }
+        
+        .btn-copy:hover {
+            background: #444;
+        }
+        
+        .qr-section {
+            text-align: center;
+            padding: 20px;
+            background: #f9f9f9;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+        
+        .qr-section p {
+            margin: 0 0 15px 0;
+            color: #666;
+            font-size: 0.95rem;
+        }
+        
+        .photo-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+            margin-top: 30px;
+        }
+        
+        .photo-card {
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            transition: transform 0.2s, box-shadow 0.2s;
+            cursor: pointer;
+        }
+        
+        .photo-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+        }
+        
+        .photo-card img {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            display: block;
+        }
+        
+        .photo-info {
+            padding: 15px;
+        }
+        
+        .photo-info strong {
+            display: block;
+            margin-bottom: 5px;
+            color: #333;
+            font-size: 1rem;
+        }
+        
+        .photo-info em {
+            display: block;
+            color: #666;
+            font-size: 0.9rem;
+            margin-bottom: 5px;
+        }
+        
+        .photo-info small {
+            color: #999;
+            font-size: 0.85rem;
+        }
+        
+        .download-section {
+            text-align: center;
+            margin: 40px 0;
+        }
+        
+        .btn-download {
+            background: #750000;
+            color: white;
+            padding: 15px 40px;
+            font-size: 1.1rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .btn-download:hover {
+            background: #5a0000;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(117, 0, 0, 0.3);
+        }
+        
+        .note-box {
+            background: #FFF4E5;
+            border: 1px solid #FFA000;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+        
+        .note-box h4 {
+            margin: 0 0 10px 0;
+            color: #E65100;
+            font-size: 1.1rem;
+        }
+        
+        .note-box p {
+            margin: 5px 0;
+            color: #666;
+            font-size: 0.95rem;
+            line-height: 1.5;
+        }
+        
+        @media (max-width: 768px) {
+            .content-wrapper {
+                flex-direction: column;
+            }
+            
+            .sidebar {
+                width: 100%;
+            }
+            
+            .photo-grid {
+                grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+                gap: 10px;
+            }
+            
+            .share-buttons {
+                flex-direction: column;
+            }
+            
+            .btn {
+                width: 100%;
+            }
+        }
+        
+        /* Toast notification */
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: #333;
+            color: white;
+            padding: 15px 25px;
+            border-radius: 6px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            display: none;
+            animation: slideIn 0.3s ease-out;
+        }
+        
+        @keyframes slideIn {
+            from {
+                transform: translateY(100px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
     </style>
 </head>
 <body>
-<div class="container">
-    <h1>📸 Foto condivise</h1>
-
-    {% if condivisione %}
-        <div class="info-box">
-            <p><strong>Titolo:</strong> {{ condivisione['titolo'] }}</p>
-            <p><strong>Condivise da:</strong> {{ condivisione['creatore'] }}</p>
-            <p><strong>Scadenza:</strong> {{ condivisione['scadenza'] }}</p>
-            <p><strong>Accessi:</strong> {{ condivisione['accessi'] }}</p>
+    <div class="header">
+        <div class="container">
+            <h1>📸 Galleria Foto Condivisa</h1>
         </div>
-
-        <div class="link-box">
-            🔗 <strong>Link:</strong> <a href="{{ request.url }}" target="_blank">{{ request.url }}</a><br>
-            <button class="btn" onclick="copyLink()">📋 Copia link</button>
-            <a class="btn" href="https://wa.me/?text={{ request.url | urlencode }}" target="_blank">🟢 WhatsApp</a>
-            <a class="btn" href="mailto:?subject=Guarda queste foto&body={{ request.url | urlencode }}" target="_blank">✉️ Email</a>
-        </div>
-    {% endif %}
-
-    <div class="foto-grid">
-        {% for foto in foto_list %}
-        <div class="foto-card">
-            <img src="{{ url_for('serve_foto_condivisa', token=token, foto_id=foto['id']) }}" alt="{{ foto['titolo'] }}">
-            <p>{{ foto['titolo'] }}</p>
-        </div>
-        {% endfor %}
     </div>
-</div>
 
-<script>
-function copyLink() {
-    navigator.clipboard.writeText(window.location.href).then(() => {
-        alert("✅ Link copiato!");
-    });
-}
-</script>
+    <div class="container">
+        <div class="content-wrapper">
+            <!-- Contenuto principale -->
+            <div class="main-content">
+                {% if condivisione.titolo %}
+                    <h2 style="margin-top: 0; color: #333;">{{ condivisione.titolo }}</h2>
+                {% endif %}
+                
+                <div class="photo-grid">
+                    {% for foto in foto_list %}
+                        <div class="photo-card" onclick="window.open('{{ url_for('serve_foto_condivisa', token=token, foto_id=foto.id) }}', '_blank')">
+                            <img src="{{ url_for('serve_foto_condivisa', token=token, foto_id=foto.id) }}" 
+                                 alt="{{ foto.titolo }}">
+                            <div class="photo-info">
+                                <strong>{{ foto.titolo }}</strong>
+                                {% if foto.descrizione %}
+                                    <em>{{ foto.descrizione }}</em>
+                                {% endif %}
+                                <small>{{ foto.data }}</small>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+                
+                {% if foto_list|length > 1 %}
+                    <div class="download-section">
+                        <a href="{{ url_for('download_zip', ids=','.join(foto_list|map(attribute='id'))) }}" 
+                           class="btn btn-download">
+                            📥 Scarica tutte le foto (ZIP)
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+
+            <!-- Sidebar -->
+            <div class="sidebar">
+                <!-- Info card -->
+                <div class="info-card">
+                    <h3>📋 Informazioni condivisione</h3>
+                    <div class="info-item">
+                        <span class="info-label">Condiviso da:</span>
+                        <span class="info-value">{{ condivisione.creatore }}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Data creazione:</span>
+                        <span class="info-value">{{ condivisione.creato_il }}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Scadenza:</span>
+                        <span class="info-value">{{ condivisione.scadenza }}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Visualizzazioni:</span>
+                        <span class="info-value">{{ condivisione.accessi }}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Numero foto:</span>
+                        <span class="info-value">{{ foto_list|length }}</span>
+                    </div>
+                </div>
+
+                <!-- Share card -->
+                <div class="info-card">
+                    <h3>🔗 Condividi questo link</h3>
+                    <div class="share-buttons">
+                        <button class="btn btn-copy" onclick="copyLink()">
+                            📋 Copia link
+                        </button>
+                        <a href="https://wa.me/?text={{ request.url|urlencode }}" 
+                           class="btn btn-whatsapp" target="_blank">
+                            WhatsApp
+                        </a>
+                        <a href="https://t.me/share/url?url={{ request.url|urlencode }}" 
+                           class="btn btn-telegram" target="_blank">
+                            Telegram
+                        </a>
+                        <a href="mailto:?subject=Foto condivise&body=Guarda queste foto: {{ request.url|urlencode }}" 
+                           class="btn btn-email">
+                            Email
+                        </a>
+                    </div>
+                    
+                    <div class="qr-section">
+                        <p>📱 Scansiona per accedere da mobile</p>
+                        <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data={{ request.url|urlencode }}" 
+                             alt="QR Code">
+                    </div>
+                </div>
+
+                <!-- Note -->
+                <div class="note-box">
+                    <h4>Nota sulla condivisione</h4>
+                    <p>Questo link permette di vedere e scaricare tutte le {{ foto_list|length }} foto selezionate.</p>
+                    <p>Il link scadrà automaticamente il {{ condivisione.scadenza }}.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast notification -->
+    <div id="toast" class="toast"></div>
+
+    <script>
+        function copyLink() {
+            navigator.clipboard.writeText(window.location.href).then(() => {
+                showToast('✅ Link copiato negli appunti!');
+            }).catch(() => {
+                // Fallback per browser che non supportano clipboard API
+                const textArea = document.createElement("textarea");
+                textArea.value = window.location.href;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                showToast('✅ Link copiato!');
+            });
+        }
+        
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.style.display = 'block';
+            
+            setTimeout(() => {
+                toast.style.display = 'none';
+            }, 3000);
+        }
+    </script>
 </body>
 </html>

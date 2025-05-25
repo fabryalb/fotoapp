@@ -359,6 +359,13 @@
     </header>
 
     <main>
+
+        {% if session.get('username') and utente_ha_permesso(nome_categoria, 'aggiungi') %}
+            <div style="margin-bottom: 20px;">
+                <a href="{{ url_for('aggiungi', categoria=nome_categoria) }}" class="btn">➕ Aggiungi foto</a>
+            </div>
+        {% endif %}
+    
         <!-- Sottocategorie come cartelle (solo se esistono) -->
         {% if sottocategorie %}
         <div class="subcategories-section">

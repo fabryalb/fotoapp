@@ -1,0 +1,391 @@
+/* Stile base */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    line-height: 1.6;
+    color: #1e1e1e;
+    background-color: #f4f1ee;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+header {
+    background-color: #750000;
+    color: white;
+    padding: 20px;
+    border-radius: 5px;
+    margin-bottom: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+header h1 {
+    margin: 0;
+    font-size: 1.8rem;
+}
+
+nav {
+    display: flex;
+    gap: 10px;
+}
+
+main {
+    background-color: white;
+    padding: 20px;
+    border-radius: 5px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    margin-bottom: 20px;
+}
+
+footer {
+    text-align: center;
+    color: #777;
+    padding: 20px;
+    font-size: 0.9rem;
+}
+
+/* Bottoni */
+.btn {
+    display: inline-block;
+    background-color: #750000;
+    color: white;
+    padding: 6px 10px;
+    border-radius: 4px;
+    text-decoration: none;
+    font-size: 0.85rem;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.btn:hover {
+    background-color: #5e0000;
+}
+
+.btn.delete {
+    background-color: #a00000;
+}
+
+.btn.delete:hover {
+    background-color: #800000;
+}
+
+/* Flash messages */
+.flash-messages {
+    margin-bottom: 20px;
+}
+
+.flash {
+    background-color: #750000;
+    color: white;
+    padding: 10px 15px;
+    border-radius: 4px;
+    margin-bottom: 10px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+/* Categorie */
+.categories {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 20px;
+}
+
+.category-card {
+    background-color: white;
+    border-radius: 5px;
+    overflow: hidden;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    transition: transform 0.3s;
+}
+
+.category-card:hover {
+    transform: translateY(-5px);
+}
+
+.category-card h2 {
+    padding: 15px;
+    background-color: #ede0dc;
+    border-bottom: 1px solid #eee;
+    text-align: center;
+    font-size: 1.2rem;
+    color: #750000;
+}
+
+.thumbnail {
+    height: 200px;
+    overflow: hidden;
+}
+
+.thumbnail img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s;
+}
+
+.thumbnail img:hover {
+    transform: scale(1.05);
+}
+
+.category-info {
+    padding: 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.category-info p {
+    color: #777;
+    font-size: 0.9rem;
+}
+
+/* Griglia foto */
+.photo-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
+}
+
+.photo-card {
+    background-color: white;
+    border-radius: 5px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    transition: transform 0.3s;
+}
+
+.photo-card:hover {
+    transform: translateY(-5px);
+}
+
+.photo-info {
+    padding: 15px;
+}
+
+.photo-info h3 {
+    margin-bottom: 5px;
+    font-size: 1.1rem;
+}
+
+.date {
+    color: #777;
+    font-size: 0.8rem;
+    margin-top: 10px;
+}
+
+.actions {
+    padding: 10px;
+    background-color: #f8f8f8;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    justify-content: center;
+}
+
+/* Overlay immagine grande */
+.overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.9);
+    z-index: 1000;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+}
+
+.overlay-content {
+    position: relative;
+    max-width: 90%;
+    max-height: 90%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.overlay img {
+    max-width: 100%;
+    max-height: 80vh;
+    box-shadow: 0 0 20px rgba(0,0,0,0.5);
+    border: 5px solid white;
+}
+
+#fullsize-title {
+    background-color: white;
+    padding: 10px 20px;
+    margin-top: 10px;
+    border-radius: 5px;
+    color: #333;
+    font-weight: bold;
+}
+
+.close-btn {
+    position: absolute;
+    top: -30px;
+    right: -30px;
+    color: white;
+    font-size: 40px;
+    cursor: pointer;
+}
+
+/* Form */
+.login-form, .edit-form, .upload-form {
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: bold;
+}
+
+input[type="text"], 
+input[type="password"], 
+input[type="date"], 
+textarea, 
+select {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 1rem;
+}
+
+textarea {
+    min-height: 100px;
+    resize: vertical;
+}
+
+/* Anteprima immagini */
+.preview-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.preview-image {
+    width: 100px;
+    height: 100px;
+    object-fit: cover;
+    border-radius: 4px;
+    border: 2px solid #ddd;
+}
+
+/* Categoria */
+.category-selection {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+.select-category, .new-category {
+    flex: 1;
+    min-width: 200px;
+}
+
+/* Modifica foto */
+.photo-preview {
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+.photo-preview img {
+    max-width: 100%;
+    max-height: 300px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    border-radius: 4px;
+}
+
+/* Empty state */
+.empty-gallery {
+    text-align: center;
+    padding: 50px 20px;
+}
+
+.empty-gallery p {
+    margin-bottom: 20px;
+    color: #777;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    header {
+        flex-direction: column;
+        gap: 15px;
+    }
+    
+    .categories, .photo-grid {
+        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    }
+    
+    .category-selection {
+        flex-direction: column;
+    }
+}
+
+/* Correzione dimensioni immagini in categoria.html */
+.foto {
+    width: 220px;
+}
+
+.foto img {
+    width: 200px;
+    height: 150px;
+    object-fit: cover;
+    border-radius: 5px;
+    margin-bottom: 8px;
+    cursor: pointer;
+}
+
+/* Frecce popup immagine */
+.prev, .next {
+    cursor: pointer;
+    position: absolute;
+    top: 50%;
+    padding: 10px;
+    font-size: 40px;
+    color: white;
+    user-select: none;
+    transform: translateY(-50%);
+    background-color: rgba(0,0,0,0.3);
+    border-radius: 50%;
+    z-index: 1100;
+}
+
+.prev {
+    left: 20px;
+}
+
+.next {
+    right: 20px;
+}
+
+/* Stile metadati nel popup */
+.metadata {
+    color: #750000;
+    background-color: white;
+    padding: 10px 20px;
+    border-radius: 8px;
+    margin-top: 20px;
+    text-align: center;
+    font-size: 0.9rem;
+    box-shadow: 0 0 10px rgba(0,0,0,0.2);
+}

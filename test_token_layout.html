@@ -1,0 +1,67 @@
+
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <title>Test Condivisione Token</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #f9f9f9; padding: 20px; }
+        .container { max-width: 900px; margin: auto; background: white; padding: 20px; border-radius: 10px; }
+        h1 { color: #750000; }
+        .info-box, .link-box, .qr-box { margin: 20px 0; padding: 15px; border: 1px solid #750000; background: #fff3f3; border-radius: 6px; }
+        .btn { display: inline-block; padding: 10px 15px; margin: 5px 5px 0 0; background: #750000; color: white; border: none; border-radius: 4px; text-decoration: none; cursor: pointer; }
+        .btn:hover { background: #5e0000; }
+        .foto-grid { display: flex; flex-wrap: wrap; gap: 15px; margin-top: 20px; }
+        .foto-card { width: calc(33% - 10px); }
+        .foto-card img { width: 100%; border: 1px solid #ccc; border-radius: 4px; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>📸 Test Condivisione tramite Token</h1>
+
+    <div class="info-box">
+        <p><strong>Titolo:</strong> Maglie Storiche</p>
+        <p><strong>Condivise da:</strong> fabrizio</p>
+        <p><strong>Scadenza:</strong> 2025-06-30</p>
+        <p><strong>Accessi:</strong> 12</p>
+    </div>
+
+    <div class="link-box">
+        🔗 <strong>Link:</strong> <a href="http://136.144.220.169:5000/condividi_token/f2a4c9d1f64a4b72" target="_blank">
+        http://136.144.220.169:5000/condividi_token/f2a4c9d1f64a4b72</a><br>
+        <button class="btn" onclick="copyLink()">📋 Copia link</button>
+        <a class="btn" href="https://wa.me/?text=http://136.144.220.169:5000/condividi_token/f2a4c9d1f64a4b72" target="_blank">🟢 WhatsApp</a>
+        <a class="btn" href="mailto:?subject=Guarda queste foto&body=http://136.144.220.169:5000/condividi_token/f2a4c9d1f64a4b72" target="_blank">✉️ Email</a>
+    </div>
+
+    <div class="qr-box" style="text-align:center;">
+        <p>📱 Scansiona per aprire il link:</p>
+        <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=http://136.144.220.169:5000/condividi_token/f2a4c9d1f64a4b72" alt="QR Code">
+    </div>
+
+    <div class="foto-grid">
+        <div class="foto-card">
+            <img src="https://via.placeholder.com/300x200.png?text=Foto+1" alt="Foto 1">
+            <p>Maglia 1992</p>
+        </div>
+        <div class="foto-card">
+            <img src="https://via.placeholder.com/300x200.png?text=Foto+2" alt="Foto 2">
+            <p>Maglia Derby</p>
+        </div>
+        <div class="foto-card">
+            <img src="https://via.placeholder.com/300x200.png?text=Foto+3" alt="Foto 3">
+            <p>Maglia Home</p>
+        </div>
+    </div>
+</div>
+
+<script>
+function copyLink() {
+    navigator.clipboard.writeText("http://136.144.220.169:5000/condividi_token/f2a4c9d1f64a4b72").then(() => {
+        alert("✅ Link copiato!");
+    });
+}
+</script>
+</body>
+</html>

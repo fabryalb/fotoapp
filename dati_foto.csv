@@ -441,7 +441,6 @@ id;titolo;descrizione;data;nome_file;categoria;peso_file;copertina
 165;04-mag-25;;04/05/2025;foto/TORO/img_1661.jpeg;TORO;;
 166;04-mag-25;;04/05/2025;foto/TORO/img_1660.jpeg;TORO;;
 167;04-mag-25;;04/05/2025;foto/TORO/img_1658.jpeg;TORO;;
-168;04-mag-25;;04/05/2025;foto/TORO/img_1657.jpeg;TORO;;
 169;04-mag-25;;04/05/2025;foto/TORO/img_1656.jpeg;TORO;;
 509;In marcia;;04/05/2025;foto/TORO/img_1664.jpeg;TORO;29;
 510;TORINO;;04/05/2025;foto/TORO/img_1663.jpeg;TORO;102;
@@ -472,7 +471,9 @@ id;titolo;descrizione;data;nome_file;categoria;peso_file;copertina
 4;Superga;Ora e sempre 4 maggio ;04/05/2024;foto/TORO/IMG_8103.jpeg;TORO;;
 32;50 anni superga;1999;04/05/1999;foto/TORO/50_anni_superga_2.JPEG;TORO;;
 33;50 anni superga;;04/05/1999;foto/TORO/50_anni_superga.JPEG;TORO;;
-17;Bilbao;risultato finale Bilbao;;foto/TORO/IMG_3452.JPG;TORO;;1
-612;;;2025-05-22;foto/Maglie Toro/Riedizioni/50_anni_superga_2.jpeg;Maglie Toro/Riedizioni;26;1
-613;;;2025-05-22;foto/Maglie Toro/Riedizioni/50_anni_superga.jpeg;Maglie Toro/Riedizioni;27;
-614;Coccarda;;2025-05-23;foto/Max/0a25caa9-b78c-42ff-a05f-55c4fcb76dda.jpeg;Max;108;
+17;Bilbao;risultato finale Bilbao;;foto/TORO/IMG_3452.JPG;TORO;;
+612;;;22/05/2025;foto/Maglie Toro/Riedizioni/50_anni_superga_2.jpeg;Maglie Toro/Riedizioni;26;1
+613;;;22/05/2025;foto/Maglie Toro/Riedizioni/50_anni_superga.jpeg;Maglie Toro/Riedizioni;27;
+614;Coccarda;;23/05/2025;foto/Max/0a25caa9-b78c-42ff-a05f-55c4fcb76dda.jpeg;Max;108;
+615;Tatuaggio;;23/05/2025;foto/TORO/img_1335.jpeg;TORO;93;1
+616;Tatuaggio;;23/05/2025;foto/TORO/img_2219.jpeg;TORO;77;

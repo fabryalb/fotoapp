@@ -299,7 +299,6 @@ def mostra_categoria(nome):
     # NUOVA PARTE: Trova le sottocategorie
     sottocategorie = []
     
-    # Cerca tutte le categorie che iniziano con questo nome + separatore
     prefisso_slash = nome + "/"
     prefisso_maggiore = nome + ">"
     
@@ -309,9 +308,7 @@ def mostra_categoria(nome):
         if cat.startswith(prefisso_slash) or cat.startswith(prefisso_maggiore):
             categorie_trovate.add(cat)
     
-    # Per ogni sottocategoria trovata, conta le foto e prepara i dati
     for categoria_completa in sorted(categorie_trovate):
-        # Estrai il nome della sottocategoria
         if '/' in categoria_completa:
             nome_breve = categoria_completa.split('/', 1)[1].strip()
         elif '>' in categoria_completa:
@@ -319,22 +316,18 @@ def mostra_categoria(nome):
         else:
             continue
         
-        # Trova tutte le foto di questa sottocategoria
         foto_sottocategoria = [f for f in tutte if f['categoria'] == categoria_completa]
         num_foto = len(foto_sottocategoria)
         
-        # Trova la foto copertina (se esiste)
         foto_copertina = None
         for f in foto_sottocategoria:
             if f.get('copertina', '').strip().lower() in ('1', 'si', 'sì', 'true'):
                 foto_copertina = f
                 break
         
-        # Se non c'è una copertina specifica, prendi la prima foto
         if not foto_copertina and foto_sottocategoria:
             foto_copertina = foto_sottocategoria[0]
         
-        # Aggiungi alla lista solo se ci sono foto e l'utente ha i permessi
         if num_foto > 0 and (not session.get('username') or utente_ha_permesso(categoria_completa, 'visualizza')):
             sottocategorie.append({
                 'categoria_completa': categoria_completa,
@@ -343,11 +336,15 @@ def mostra_categoria(nome):
                 'foto_copertina': foto_copertina
             })
 
+    # ✅ FINALE CORRETTO
     return render_template('categoria.html', 
-                         nome=nome, 
-                         foto=foto_template, 
-                         sort_by=sort_by,
-                         sottocategorie=sottocategorie)
+        nome=nome, 
+        foto=foto_template, 
+        sort_by=sort_by,
+        sottocategorie=sottocategorie,
+        utente_ha_permesso=utente_ha_permesso  # <-- NECESSARIO per Jinja2
+    )
+
 
 @app.route('/modifica/<id_foto>', methods=['GET', 'POST'])
 def modifica(id_foto):
@@ -1472,4 +1469,8 @@ def extract_exif_date(image_path):
     return None
 
 if __name__ == '__main__':
-    app.run(debug=False, host='0.0.0.0', port=int(os.environ.get("PORT", 5050)))
+    def avvia_flask():
+        app.run(debug=True, host='0.0.0.0', port=5000, use_reloader=False)
+    
+    threading.Thread(target=avvia_flask, daemon=True).start()
+    input("✅ Server avviato. Premi INVIO per chiudere...")

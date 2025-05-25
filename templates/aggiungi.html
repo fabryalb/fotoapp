@@ -41,9 +41,9 @@
                 <input type="date" id="data" name="data" value="{{ oggi }}">
             </div>
 
-            <!-- SEZIONE CATEGORIE MIGLIORATA -->
+            <!-- SEZIONE INTEGRATA CON 4 TAB -->
             <div class="form-group">
-                <label>Seleziona dove inserire le foto:</label>
+                <label>Seleziona modalità e categoria:</label>
                 
                 <div class="category-selection-tabs">
                     <div class="tab-buttons">
@@ -51,14 +51,17 @@
                             📁 Categoria esistente
                         </button>
                         <button type="button" class="tab-btn" data-tab="tab-nuova-principale">
-                            ➕ Nuova categoria principale
+                            ➕ Nuova principale
                         </button>
                         <button type="button" class="tab-btn" data-tab="tab-nuova-sotto">
                             📂 Nuova sottocategoria
                         </button>
+                        <button type="button" class="tab-btn" data-tab="tab-massivo">
+                            📦 Upload Massivo
+                        </button>
                     </div>
                     
-                    <!-- Tab 1: Categoria esistente -->
+                    <!-- TAB 1: Categoria esistente -->
                     <div class="tab-content active" id="tab-esistente">
                         <input type="hidden" name="tipo_categoria" value="esistente">
                         
@@ -69,45 +72,18 @@
                         <label for="categoria_esistente">Seleziona categoria:</label>
                         <select id="categoria_esistente" name="categoria_esistente" class="full-width">
                             <option value="">-- Seleziona dove inserire le foto --</option>
-                            {% for cat_princ, sottocategorie in struttura_categorie.items() %}
-                                <optgroup label="📁 {{ cat_princ }}">
-                                    <!-- Categoria principale -->
-                                    <option value="{{ cat_princ }}">
-                                        🏠 {{ cat_princ }} (principale)
-                                    </option>
-                                    <!-- Sottocategorie -->
-                                    {% for subcat in sottocategorie %}
-                                        <option value="{{ cat_princ }}/{{ subcat }}">
-                                            📂 {{ cat_princ }} → {{ subcat }}
-                                        </option>
-                                    {% endfor %}
-                                </optgroup>
-                            {% endfor %}
-                            
-                            <!-- Categorie semplici (senza sottocategorie) -->
-                            {% set categorie_semplici = [] %}
                             {% for categoria in categorie %}
-                                {% if '/' not in categoria and '>' not in categoria %}
-                                    {% set _ = categorie_semplici.append(categoria) %}
-                                {% endif %}
+                                <option value="{{ categoria }}">{{ categoria }}</option>
                             {% endfor %}
-                            
-                            {% if categorie_semplici %}
-                                <optgroup label="📋 Categorie semplici">
-                                    {% for categoria in categorie_semplici %}
-                                        <option value="{{ categoria }}">🏷️ {{ categoria }}</option>
-                                    {% endfor %}
-                                </optgroup>
-                            {% endif %}
                         </select>
                     </div>
                     
-                    <!-- Tab 2: Nuova categoria principale (livello 1) -->
+                    <!-- TAB 2: Nuova categoria principale -->
                     <div class="tab-content" id="tab-nuova-principale">
                         <input type="hidden" name="tipo_categoria" value="nuova_principale" disabled>
                         
                         <div class="explanation-box">
-                            <p>➕ Crea una nuova categoria di <strong>primo livello</strong> (come "maglie toro", "max", ecc.)</p>
+                            <p>➕ Crea una nuova categoria di <strong>primo livello</strong></p>
                             <small>Esempio: "maglie juventus", "ricordi famiglia", "viaggi 2025"</small>
                         </div>
                         
@@ -127,59 +103,42 @@
                         </div>
                     </div>
                     
-                    <!-- Tab 3: Nuova sottocategoria (livello 2) -->
+                    <!-- TAB 3: Nuova sottocategoria -->
                     <div class="tab-content" id="tab-nuova-sotto">
                         <input type="hidden" name="tipo_categoria" value="nuova_sotto" disabled>
                         
                         <div class="explanation-box">
                             <p>📂 Crea una <strong>sottocategoria</strong> all'interno di una categoria esistente</p>
-                            <small>Esempio: sotto "maglie toro" → "maglie toro vintage", "maglie toro match worn"</small>
+                            <small>Esempio: "Maglie Toro" → "Maglie Toro Vintage"</small>
                         </div>
                         
                         <div class="form-row">
                             <div class="form-column">
-                                <label for="categoria_principale">Categoria principale (dove creare la sottocategoria):</label>
+                                <label for="categoria_principale">Categoria principale:</label>
                                 <select id="categoria_principale" name="categoria_principale" class="full-width" disabled>
                                     <option value="">-- Seleziona categoria padre --</option>
-                                    {% set categorie_principali_uniche = [] %}
                                     {% for categoria in categorie %}
-                                        {% if '/' in categoria %}
-                                            {% set cat_princ = categoria.split('/')[0].strip() %}
-                                            {% if cat_princ not in categorie_principali_uniche %}
-                                                {% set _ = categorie_principali_uniche.append(cat_princ) %}
-                                            {% endif %}
-                                        {% elif '>' in categoria %}
-                                            {% set cat_princ = categoria.split('>')[0].strip() %}
-                                            {% if cat_princ not in categorie_principali_uniche %}
-                                                {% set _ = categorie_principali_uniche.append(cat_princ) %}
-                                            {% endif %}
-                                        {% else %}
-                                            {% if categoria not in categorie_principali_uniche %}
-                                                {% set _ = categorie_principali_uniche.append(categoria) %}
-                                            {% endif %}
+                                        {% if '/' not in categoria and '>' not in categoria %}
+                                            <option value="{{ categoria }}">📁 {{ categoria }}</option>
                                         {% endif %}
-                                    {% endfor %}
-                                    
-                                    {% for cat_princ in categorie_principali_uniche|sort %}
-                                        <option value="{{ cat_princ }}">📁 {{ cat_princ }}</option>
                                     {% endfor %}
                                 </select>
                             </div>
                             
                             <div class="form-column">
-                                <label for="tipo_separatore">Tipo di separatore:</label>
+                                <label for="tipo_separatore">Separatore:</label>
                                 <select id="tipo_separatore" name="tipo_separatore" class="full-width" disabled>
-                                    <option value="/">/ (slash) - Raccomandato</option>
-                                    <option value=">">→ (freccia) - Alternativo</option>
+                                    <option value="/">/ (slash)</option>
+                                    <option value=">">→ (freccia)</option>
                                 </select>
                             </div>
                         </div>
                         
-                        <label for="nuova_sottocategoria">Nome della sottocategoria:</label>
+                        <label for="nuova_sottocategoria">Nome sottocategoria:</label>
                         <input type="text" 
                                id="nuova_sottocategoria" 
                                name="nuova_sottocategoria" 
-                               placeholder="Es: vintage, match worn, firmate, autografate" 
+                               placeholder="Es: vintage, match worn, firmate" 
                                class="full-width" 
                                disabled>
                         
@@ -190,27 +149,63 @@
                             </div>
                         </div>
                     </div>
+                    
+                    <!-- TAB 4: Upload Massivo -->
+                    <div class="tab-content" id="tab-massivo">
+                        <input type="hidden" name="tipo_categoria" value="massivo" disabled>
+                        
+                        <div class="explanation-box massivo">
+                            <p>📦 <strong>Upload Massivo:</strong> Carica molte foto velocemente</p>
+                            <small>⚠️ Tutti i file avranno lo stesso titolo, descrizione e data</small>
+                        </div>
+                        
+                        <label for="categoria_massivo">Categoria di destinazione:</label>
+                        <select id="categoria_massivo" name="categoria_massivo" class="full-width" disabled>
+                            <option value="">-- Seleziona categoria per upload massivo --</option>
+                            {% for categoria in categorie %}
+                                <option value="{{ categoria }}">{{ categoria }}</option>
+                            {% endfor %}
+                        </select>
+                        
+                        <div class="massivo-info">
+                            <div class="info-item">
+                                <span class="info-icon">📝</span>
+                                <div>
+                                    <strong>Titolo automatico:</strong><br>
+                                    <small>Se vuoto, userà il nome del file</small>
+                                </div>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-icon">📅</span>
+                                <div>
+                                    <strong>Data automatica:</strong><br>
+                                    <small>Se vuota, proverà a usare la data EXIF della foto</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
-            <!-- FINE SEZIONE CATEGORIE MIGLIORATA -->
 
             <div class="form-group">
                 <label for="file">Seleziona foto:</label>
-                <input type="file" id="file" name="file[]" multiple accept="image/*">
+                <input type="file" id="file" name="file" multiple accept="image/*">
                 <div class="preview-container" id="preview"></div>
+                <div class="file-counter" id="file-counter" style="display:none;">
+                    <span id="file-count">0</span> file selezionati
+                </div>
             </div>
 
             <div class="form-group">
-                <button type="submit" class="btn">Carica foto</button>
+                <button type="submit" class="btn" id="submit-btn">Carica foto</button>
             </div>
         </form>
     </main>
 
     <footer>
-        <p>&copy; 2025 Powerded by Fabry FVCG</p>
+        <p>&copy; 2025 Powered by Fabry FVCG</p>
     </footer>
 
-    <!-- CSS AGGIUNTIVO -->
     <style>
     .category-selection-tabs {
         background-color: #f9f9f9;
@@ -228,11 +223,11 @@
 
     .tab-btn {
         flex: 1;
-        padding: 12px 10px;
+        padding: 12px 8px;
         background: none;
         border: none;
         cursor: pointer;
-        font-size: 0.9rem;
+        font-size: 0.85rem;
         transition: all 0.2s;
         text-align: center;
     }
@@ -261,6 +256,11 @@
         padding: 12px 15px;
         margin-bottom: 15px;
         border-radius: 0 5px 5px 0;
+    }
+
+    .explanation-box.massivo {
+        background-color: #fff3cd;
+        border-left-color: #856404;
     }
 
     .explanation-box p {
@@ -310,40 +310,81 @@
         font-size: 1rem;
     }
 
-    /* Stili per le opzioni del select */
-    optgroup {
-        font-weight: bold;
-        color: #750000;
+    .massivo-info {
+        margin-top: 15px;
+        display: flex;
+        gap: 15px;
     }
 
-    option {
-        padding: 5px;
+    .info-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 8px;
+        flex: 1;
+        background-color: #f8f9fa;
+        padding: 10px;
+        border-radius: 5px;
+    }
+
+    .info-icon {
+        font-size: 1.2rem;
+        margin-top: 2px;
+    }
+
+    .file-counter {
+        text-align: center;
+        margin-top: 10px;
+        padding: 8px;
+        background-color: #e9ecef;
+        border-radius: 4px;
+        font-weight: bold;
     }
 
     /* Responsive */
     @media (max-width: 768px) {
         .tab-buttons {
-            flex-direction: column;
+            flex-wrap: wrap;
         }
         
         .tab-btn {
+            flex: 1 1 50%;
             padding: 10px;
             border-bottom: 1px solid #ddd;
         }
         
-        .form-row {
+        .form-row, .massivo-info {
             flex-direction: column;
             gap: 10px;
         }
     }
     </style>
 
-    <!-- JAVASCRIPT -->
     <script>
-        // Anteprima delle immagini selezionate (codice esistente)
+        // Anteprima delle immagini
         document.getElementById('file').addEventListener('change', function(e) {
             const preview = document.getElementById('preview');
+            const counter = document.getElementById('file-counter');
+            const countSpan = document.getElementById('file-count');
+            const submitBtn = document.getElementById('submit-btn');
+            
             preview.innerHTML = '';
+            const fileCount = this.files.length;
+            
+            if (fileCount > 0) {
+                counter.style.display = 'block';
+                countSpan.textContent = fileCount;
+                
+                // Aggiorna il testo del pulsante in base al tab attivo
+                const activeTab = document.querySelector('.tab-btn.active').getAttribute('data-tab');
+                if (activeTab === 'tab-massivo') {
+                    submitBtn.textContent = `Carica tutte (${fileCount} foto)`;
+                } else {
+                    submitBtn.textContent = `Carica foto (${fileCount})`;
+                }
+            } else {
+                counter.style.display = 'none';
+                submitBtn.textContent = 'Carica foto';
+            }
             
             for (const file of this.files) {
                 if (file.type.startsWith('image/')) {
@@ -363,19 +404,17 @@
             }
         });
 
-        // NUOVO CODICE PER I TAB DELLE CATEGORIE
+        // Gestione dei tab
         document.addEventListener('DOMContentLoaded', function() {
             const tabButtons = document.querySelectorAll('.tab-btn');
             const tabContents = document.querySelectorAll('.tab-content');
             
-            // Gestione dei tab
             tabButtons.forEach(button => {
                 button.addEventListener('click', function() {
                     // Rimuovi active da tutti
                     tabButtons.forEach(btn => btn.classList.remove('active'));
                     tabContents.forEach(content => {
                         content.classList.remove('active');
-                        // Disabilita tutti i campi
                         content.querySelectorAll('input, select').forEach(field => {
                             field.disabled = true;
                         });
@@ -387,14 +426,30 @@
                     const activeContent = document.getElementById(tabId);
                     activeContent.classList.add('active');
                     
-                    // Abilita i campi del tab attivo
                     activeContent.querySelectorAll('input, select').forEach(field => {
                         field.disabled = false;
                     });
+                    
+                    // Aggiorna il pulsante
+                    updateSubmitButton();
                 });
             });
             
-            // Anteprima per categoria principale
+            function updateSubmitButton() {
+                const activeTab = document.querySelector('.tab-btn.active').getAttribute('data-tab');
+                const submitBtn = document.getElementById('submit-btn');
+                const fileInput = document.getElementById('file');
+                
+                if (activeTab === 'tab-massivo' && fileInput.files.length > 0) {
+                    submitBtn.textContent = `Carica tutte (${fileInput.files.length} foto)`;
+                } else if (fileInput.files.length > 0) {
+                    submitBtn.textContent = `Carica foto (${fileInput.files.length})`;
+                } else {
+                    submitBtn.textContent = 'Carica foto';
+                }
+            }
+            
+            // Anteprima categoria principale
             const nuovaPrincipaleInput = document.getElementById('nuova_categoria_principale');
             const previewPrincipale = document.getElementById('preview-principale');
             const previewPrincipaleText = document.getElementById('preview-principale-text');
@@ -409,7 +464,7 @@
                 }
             });
             
-            // Anteprima per sottocategoria
+            // Anteprima sottocategoria
             const categoriaPrincipaleSelect = document.getElementById('categoria_principale');
             const tipoSeparatoreSelect = document.getElementById('tipo_separatore');
             const nuovaSottocategoriaInput = document.getElementById('nuova_sottocategoria');

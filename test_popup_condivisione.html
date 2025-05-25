@@ -1,0 +1,51 @@
+
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <title>Test Condivisione</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .btn { padding: 10px 15px; margin: 5px; border: none; background: #750000; color: white; cursor: pointer; border-radius: 4px; }
+        .btn:hover { background: #5e0000; }
+    </style>
+</head>
+<body>
+
+<h2>Test popup condivisione</h2>
+<button onclick="mostraPopup('http://136.144.220.169:5000/condividi_token/esempio123')">🔗 Genera link</button>
+
+<!-- Popup moderno -->
+<div id="popup-link" style="display:none; text-align:center; margin: 20px auto; padding: 15px; border: 1px solid #750000; background: #fff3f3; max-width: 600px; border-radius: 8px;">
+  <p style="font-size: 1rem; margin-bottom: 10px;">✅ Link di condivisione creato:</p>
+  <a id="link-generato" href="#" target="_blank" style="word-break: break-all; color: #750000; font-weight: bold;"></a><br><br>
+  <div style="display: flex; flex-wrap: wrap; gap: 10px; justify-content: center;">
+    <button onclick="copyLink()" class="btn">📋 Copia</button>
+    <a id="waShare" class="btn" target="_blank">🟢 WhatsApp</a>
+    <a id="tgShare" class="btn" target="_blank">📢 Telegram</a>
+    <a id="emailShare" class="btn" target="_blank">✉️ Email</a>
+  </div>
+</div>
+
+<script>
+function mostraPopup(link) {
+  const box = document.getElementById("popup-link");
+  const anchor = document.getElementById("link-generato");
+  anchor.href = link;
+  anchor.innerText = link;
+
+  document.getElementById("waShare").href = `https://wa.me/?text=${encodeURIComponent(link)}`;
+  document.getElementById("tgShare").href = `https://t.me/share/url?url=${encodeURIComponent(link)}`;
+  document.getElementById("emailShare").href = `mailto:?subject=Condivisione foto&body=${encodeURIComponent(link)}`;
+
+  box.style.display = "block";
+}
+
+function copyLink() {
+  const link = document.getElementById("link-generato").href;
+  navigator.clipboard.writeText(link).then(() => alert("✅ Link copiato!"));
+}
+</script>
+
+</body>
+</html>
