@@ -4,7 +4,7 @@ from PIL import Image, ExifTags
 from datetime import datetime
 from werkzeug.utils import secure_filename
 from photo_sharing import init_sharing_routes, gestore_condivisioni
-from db import check_login, get_foto, get_utenti, save_utenti, save_foto_db, log_attivita # Assumi che queste funzioni esistano in db.py
+from db import check_login, get_foto, get_utenti, save_utenti, save_foto_db, log_attivita, elimina_foto_da_db, get_all_log_attivita, debug_database_schema, debug_specific_photo, normalizza_database, verifica_integrita_sistema, ripara_database_automatico # Assumi che queste funzioni esistano in db.py
 from csv_sync import aggiorna_csv_foto, aggiorna_csv_utenti, aggiorna_csv_log
 
 
@@ -449,7 +449,8 @@ def aggiungi():
         files = request.files.getlist('file[]')
         for file in files:
             if file and file.filename:
-                nuovo_id = max([int(f['id']) for f in tutte if f['id'].isdigit()] + [0]) + 1
+                print("📋 ID esistenti:", [f['id'] for f in tutte])  # DEBUG
+                nuovo_id = max([int(f['id']) for f in tutte if str(f['id']).isdigit()] + [0]) + 1
                 filename = secure_filename(file.filename).lower()
                 folder = os.path.join(BASE_FOLDER, categoria)
                 os.makedirs(folder, exist_ok=True)
@@ -467,7 +468,7 @@ def aggiungi():
                 img.save(save_path, optimize=True, quality=85)
                 
                 peso_kb = os.path.getsize(save_path) // 1024
-                relative_path = f"foto/{categoria}/{filename}"
+                relative_path = f"foto/{categoria.lower()}/{filename}"
                 
                 tutte.append({
                     'id': str(nuovo_id),
@@ -510,7 +511,7 @@ def upload_massivo():
 
         for file in files:
             if file and file.filename:
-                nuovo_id = max([int(f['id']) for f in tutte if f['id'].isdigit()] + [0]) + 1
+                nuovo_id = max([int(f['id']) for f in tutte if str(f['id']).isdigit()] + [0]) + 1
                 filename = secure_filename(file.filename).lower()
                 folder = os.path.join(BASE_FOLDER, categoria)
                 os.makedirs(folder, exist_ok=True)
@@ -528,7 +529,7 @@ def upload_massivo():
                 img.save(save_path, optimize=True, quality=85)
 
                 peso_kb = os.path.getsize(save_path) // 1024
-                relative_path = f"foto/{categoria}/{filename}"
+                relative_path = f"foto/{categoria.lower()}/{filename}"
 
                 tutte.append({
                     'id': str(nuovo_id),
@@ -555,27 +556,87 @@ def elimina(id_foto):
         flash("Devi effettuare il login per eliminare le foto")
         return redirect(url_for('login'))
     
-    tutte = get_foto()
-    foto = next((f for f in tutte if f['id'] == id_foto), None)
+    print(f"🎯 Richiesta eliminazione per ID: '{id_foto}' (tipo: {type(id_foto)})")
+    
+    tutte = get_foto()  # Questa riga dovrebbe funzionare se l'import è corretto
+    print(f"📋 ID disponibili nel DB: {[f['id'] for f in tutte[:5]]}...")
+    
+    # Cerca la foto con gestione robusta dell'ID
+    foto = None
+    for f in tutte:
+        if str(f['id']) == str(id_foto):
+            foto = f
+            break
     
     if not foto:
+        print(f"❌ Foto con ID '{id_foto}' non trovata")
         flash("Foto non trovata")
         return redirect(url_for('index'))
+    
+    print(f"✅ Foto trovata: {foto['titolo']} (categoria: {foto['categoria']})")
     
     if not utente_ha_permesso(foto['categoria'], 'elimina'):
         flash("Non hai i permessi per eliminare questa foto")
         return redirect(url_for('mostra_categoria', nome=foto['categoria']))
     
-    path = os.path.join('static', foto['nome_file'])
-    if os.path.exists(path):
-        os.remove(path)
+    # Costruisci il percorso del file con gestione case-insensitive
+    nome_file_originale = foto['nome_file']
+    path_completo = os.path.join('static', nome_file_originale)
     
-    tutte = [f for f in tutte if f['id'] != id_foto]
-    salva_foto(tutte) 
-    aggiorna_csv_foto() # Mantenuto salva_foto che ora punta a save_foto_db
+    print(f"📁 Percorso file originale: {path_completo}")
+    print(f"📁 File esiste (case-sensitive): {os.path.exists(path_completo)}")
     
-    log_evento(request.remote_addr, session['username'], 'elimina', foto['categoria'], id_foto)
-    flash("Foto eliminata con successo")
+    # Se il file non esiste con il case originale, prova a cercarlo
+    if not os.path.exists(path_completo):
+        print("🔍 File non trovato, ricerca case-insensitive...")
+        
+        dir_path = os.path.dirname(path_completo)
+        nome_file = os.path.basename(nome_file_originale)
+        
+        print(f"📁 Directory: {dir_path}")
+        print(f"📄 Nome file cercato: {nome_file}")
+        
+        if os.path.exists(dir_path):
+            files_in_dir = os.listdir(dir_path)
+            print(f"📋 File nella directory: {files_in_dir}")
+            
+            for file_esistente in files_in_dir:
+                if file_esistente.lower() == nome_file.lower():
+                    path_completo = os.path.join(dir_path, file_esistente)
+                    print(f"✅ File trovato con case diverso: {path_completo}")
+                    break
+    
+    # Elimina il file fisico se esiste
+    if os.path.exists(path_completo):
+        try:
+            os.remove(path_completo)
+            print("🗑️ File fisico eliminato con successo")
+        except Exception as e:
+            print(f"❌ Errore eliminazione file fisico: {e}")
+            flash(f"Errore nell'eliminazione del file: {e}")
+    else:
+        print("⚠️ File fisico non trovato, continuo con eliminazione dal DB")
+    
+    # Elimina dal database
+    print(f"📣 Chiamata eliminazione DB per ID '{id_foto}'")
+    
+    # NON mettere import qui! La funzione deve essere già importata all'inizio del file
+    risultato = elimina_foto_da_db(id_foto)
+    
+    if risultato:
+        print("✅ Eliminazione dal DB riuscita")
+        try:
+            aggiorna_csv_foto()
+            print("📝 CSV aggiornato dopo eliminazione")
+        except Exception as e:
+            print(f"⚠️ Errore aggiornamento CSV: {e}")
+        
+        log_evento(request.remote_addr, session['username'], 'elimina', foto['categoria'], id_foto)
+        flash("Foto eliminata con successo")
+    else:
+        print("❌ Eliminazione dal DB fallita")
+        flash("Errore nell'eliminazione della foto dal database")
+    
     return redirect(url_for('mostra_categoria', nome=foto['categoria']))
 
 @app.route('/elimina_categoria/<nome>')
@@ -1299,7 +1360,7 @@ def report_attivita():
     riepilogo_per_utente = {}
     
     # Ottieni i dati di log dal database
-    from db import get_all_log_attivita
+    
     log_data = get_all_log_attivita() # Assumi che log_attivita possa restituire tutti i log se richiamata con un flag
     
     if not log_data:
@@ -1396,6 +1457,199 @@ def extract_exif_date(image_path):
         print(f"Errore nell'estrazione EXIF: {e}")
 
     return None
+@app.route('/admin')
+def admin_panel():
+    """Redirect al pannello admin principale"""
+    if not session.get('username') or session.get('ruolo') != 'admin':
+        flash("Solo l'amministratore può accedere al pannello admin")
+        return redirect(url_for('index'))
+    
+    return redirect(url_for('admin_manutenzione'))
 
-if __name__ == "__main__":
-    app.run()
+# Opzionale: route per accesso diretto alle funzioni più usate
+@app.route('/admin/debug')
+def admin_debug_quick():
+    """Accesso rapido al debug database"""
+    if not session.get('username') or session.get('ruolo') != 'admin':
+        flash("Solo l'amministratore può accedere al debug")
+        return redirect(url_for('index'))
+    
+    return redirect(url_for('debug_database'))
+
+@app.route('/admin/repair')
+def admin_repair_quick():
+    """Accesso rapido alla riparazione automatica"""
+    if not session.get('username') or session.get('ruolo') != 'admin':
+        flash("Solo l'amministratore può eseguire riparazioni")
+        return redirect(url_for('index'))
+    
+    return redirect(url_for('admin_ripara_automatico'))
+@app.route('/debug/database')
+def debug_database():
+    if not session.get('username') or session.get('ruolo') != 'admin':
+        flash("Solo l'amministratore può accedere al debug")
+        return redirect(url_for('index'))
+    
+    
+    debug_database_schema()
+    
+    flash("Controlla i log del server per le informazioni di debug")
+    return redirect(url_for('index'))
+
+@app.route('/debug/photo/<photo_id>')
+def debug_photo(photo_id):
+    if not session.get('username') or session.get('ruolo') != 'admin':
+        flash("Solo l'amministratore può accedere al debug")
+        return redirect(url_for('index'))
+    
+    
+    debug_specific_photo(photo_id)
+    
+    flash(f"Controlla i log del server per il debug della foto {photo_id}")
+    return redirect(url_for('index'))
+
+# Aggiungi queste route al tuo app.py (prima del if __name__ == '__main__':)
+
+@app.route('/admin/manutenzione')
+def admin_manutenzione():
+    """Pannello di manutenzione per l'amministratore"""
+    if not session.get('username') or session.get('ruolo') != 'admin':
+        flash("Solo l'amministratore può accedere alla manutenzione")
+        return redirect(url_for('index'))
+    
+    return render_template('admin_manutenzione.html')
+
+@app.route('/admin/normalizza_database')
+def admin_normalizza_database():
+    """Normalizza il database esistente"""
+    if not session.get('username') or session.get('ruolo') != 'admin':
+        flash("Solo l'amministratore può eseguire la normalizzazione")
+        return redirect(url_for('index'))
+    
+    try:
+        
+        risultato = normalizza_database()
+        
+        flash(f"Normalizzazione completata! Risolti: {risultato['risolti']} problemi, "
+              f"File non trovati: {len(risultato['non_trovati'])}")
+        
+        if risultato['non_trovati']:
+            # Salva i dettagli in sessione per mostrarli
+            session['file_non_trovati'] = risultato['non_trovati']
+            
+    except Exception as e:
+        flash(f"Errore durante la normalizzazione: {e}")
+        print(f"❌ Errore normalizzazione: {e}")
+    
+    return redirect(url_for('admin_manutenzione'))
+
+@app.route('/admin/verifica_integrita')
+def admin_verifica_integrita():
+    """Verifica l'integrità del sistema"""
+    if not session.get('username') or session.get('ruolo') != 'admin':
+        flash("Solo l'amministratore può verificare l'integrità")
+        return redirect(url_for('index'))
+    
+    try:
+        
+        risultato = verifica_integrita_sistema()
+        
+        flash(f"Verifica completata! DB: {risultato['file_db']} file, "
+              f"Fisici: {risultato['file_fisici']} file, "
+              f"Mancanti: {len(risultato['mancanti'])}, "
+              f"Orfani: {len(risultato['orfani'])}")
+        
+        # Salva risultati in sessione
+        session['verifica_risultati'] = {
+            'mancanti': risultato['mancanti'][:20],  # Max 20 per sessione
+            'orfani': risultato['orfani'][:20]
+        }
+        
+    except Exception as e:
+        flash(f"Errore durante la verifica: {e}")
+        print(f"❌ Errore verifica: {e}")
+    
+    return redirect(url_for('admin_manutenzione'))
+
+@app.route('/admin/ripara_automatico')
+def admin_ripara_automatico():
+    """Riparazione automatica completa"""
+    if not session.get('username') or session.get('ruolo') != 'admin':
+        flash("Solo l'amministratore può eseguire la riparazione")
+        return redirect(url_for('index'))
+    
+    try:
+        
+        risultato = ripara_database_automatico()
+        
+        norm = risultato['normalizzazione']
+        verif = risultato['verifica']
+        
+        flash(f"Riparazione completata! "
+              f"Normalizzati: {norm['risolti']} file, "
+              f"Mancanti: {len(verif['mancanti'])}, "
+              f"Orfani: {len(verif['orfani'])}")
+        
+    except Exception as e:
+        flash(f"Errore durante la riparazione: {e}")
+        print(f"❌ Errore riparazione: {e}")
+    
+    return redirect(url_for('admin_manutenzione'))
+
+@app.route('/admin/pulisci_record_orfani')
+def admin_pulisci_record_orfani():
+    """Rimuove i record del database per file che non esistono più"""
+    if not session.get('username') or session.get('ruolo') != 'admin':
+        flash("Solo l'amministratore può pulire i record orfani")
+        return redirect(url_for('index'))
+    
+    try:
+        
+        risultato = verifica_integrita_sistema()
+        
+        file_mancanti = risultato['mancanti']
+        
+        if not file_mancanti:
+            flash("Nessun record orfano trovato!")
+            return redirect(url_for('admin_manutenzione'))
+        
+        # Elimina i record per file mancanti
+        tutte_foto = get_foto()
+        foto_da_mantenere = []
+        eliminati = 0
+        
+        for foto in tutte_foto:
+            path_completo = os.path.join('static', foto['nome_file'])
+            if path_completo not in file_mancanti:
+                foto_da_mantenere.append(foto)
+            else:
+                eliminati += 1
+                print(f"🗑️ Eliminato record orfano: ID {foto['id']} - {foto['titolo']}")
+        
+        # Risalva solo le foto con file esistenti
+        save_foto_db(foto_da_mantenere)
+        try:
+            aggiorna_csv_foto()
+        except:
+            pass  # Ignora errori CSV
+        
+        flash(f"Puliti {eliminati} record orfani dal database!")
+        
+    except Exception as e:
+        flash(f"Errore durante la pulizia: {e}")
+        print(f"❌ Errore pulizia: {e}")
+    
+    return redirect(url_for('admin_manutenzione'))
+
+if __name__ == '__main__':
+    if os.environ.get("RENDER") == "TRUE":
+        # Esecuzione su Render: no input, no threading
+        app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 10000)))
+    else:
+        # Esecuzione locale: VPS o PC
+        import threading
+        def avvia_flask():
+            app.run(debug=True, host='0.0.0.0', port=5000, use_reloader=False)
+        
+        threading.Thread(target=avvia_flask, daemon=True).start()
+        input("✅ Server avviato. Premi INVIO per chiudere...")

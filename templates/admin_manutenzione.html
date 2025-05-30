@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manutenzione Sistema - Galleria</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            color: #333;
+            border-bottom: 3px solid #007bff;
+            padding-bottom: 10px;
+        }
+        
+        .section {
+            margin: 30px 0;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            background: #fafafa;
+        }
+        
+        .section h2 {
+            color: #555;
+            margin-top: 0;
+        }
+        
+        .btn {
+            display: inline-block;
+            padding: 12px 24px;
+            margin: 8px 8px 8px 0;
+            background-color: #007bff;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.3s;
+        }
+        
+        .btn:hover {
+            background-color: #0056b3;
+        }
+        
+        .btn-warning {
+            background-color: #ffc107;
+            color: #212529;
+        }
+        
+        .btn-warning:hover {
+            background-color: #e0a800;
+        }
+        
+        .btn-danger {
+            background-color: #dc3545;
+        }
+        
+        .btn-danger:hover {
+            background-color: #c82333;
+        }
+        
+        .btn-success {
+            background-color: #28a745;
+        }
+        
+        .btn-success:hover {
+            background-color: #218838;
+        }
+        
+        .btn-secondary {
+            background-color: #6c757d;
+        }
+        
+        .btn-secondary:hover {
+            background-color: #545b62;
+        }
+        
+        .alert {
+            padding: 15px;
+            margin: 20px 0;
+            border: 1px solid transparent;
+            border-radius: 4px;
+        }
+        
+        .alert-info {
+            color: #0c5460;
+            background-color: #d1ecf1;
+            border-color: #bee5eb;
+        }
+        
+        .alert-warning {
+            color: #856404;
+            background-color: #fff3cd;
+            border-color: #ffeaa7;
+        }
+        
+        .description {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 15px;
+            line-height: 1.5;
+        }
+        
+        .back-link {
+            margin-top: 30px;
+            text-align: center;
+        }
+        
+        .results {
+            margin-top: 20px;
+            padding: 15px;
+            background: #e9ecef;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .icon {
+            margin-right: 8px;
+        }
+        
+        .debug-section {
+            background: #f8f9fa;
+            border-left: 4px solid #17a2b8;
+        }
+        
+        .input-group {
+            display: flex;
+            margin-bottom: 10px;
+        }
+        
+        .input-group input {
+            flex: 1;
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px 0 0 4px;
+            border-right: none;
+        }
+        
+        .input-group .btn {
+            border-radius: 0 4px 4px 0;
+            margin: 0;
+        }
+        
+        .status-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+        
+        .status-ok {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        
+        .status-warning {
+            background-color: #fff3cd;
+            color: #856404;
+        }
+        
+        .status-error {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Manutenzione Sistema</h1>
+        
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-info">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+        
+        <div class="alert alert-warning">
+            <strong>⚠️ Attenzione:</strong> Queste operazioni modificano il database. 
+            Assicurati di avere un backup prima di procedere.
+        </div>
+        
+        <!-- Diagnostica -->
+        <div class="section debug-section">
+            <h2>🔍 Diagnostica e Debug</h2>
+            <div class="description">
+                Verifica lo stato del sistema e identifica eventuali problemi. Usa queste funzioni per diagnosticare problemi specifici.
+            </div>
+            
+            <a href="{{ url_for('debug_database') }}" class="btn">
+                <span class="icon">📊</span>Schema Database
+            </a>
+            
+            <a href="{{ url_for('admin_verifica_integrita') }}" class="btn">
+                <span class="icon">🔍</span>Verifica Integrità
+            </a>
+            
+            <!-- Debug foto specifica -->
+            <div style="margin-top: 15px;">
+                <h3>🔬 Debug Foto Specifica</h3>
+                <div class="description">
+                    Inserisci l'ID di una foto per analizzare i dettagli del database:
+                </div>
+                <div class="input-group">
+                    <input type="text" id="photoId" placeholder="Inserisci ID foto (es. 123)" maxlength="10">
+                    <button class="btn btn-secondary" onclick="debugPhoto()">
+                        <span class="icon">🔬</span>Debug Foto
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Riparazione -->
+        <div class="section">
+            <h2>🔧 Riparazione Automatica</h2>
+            <div class="description">
+                Corregge automaticamente i problemi più comuni del sistema. Inizia sempre con "Riparazione Automatica" per una soluzione completa.
+            </div>
+            
+            <a href="{{ url_for('admin_ripara_automatico') }}" class="btn btn-success">
+                <span class="icon">🔧</span>Riparazione Automatica
+            </a>
+            
+            <a href="{{ url_for('admin_normalizza_database') }}" class="btn btn-warning">
+                <span class="icon">⚙️</span>Solo Normalizzazione
+            </a>
+        </div>
+        
+        <!-- Pulizia -->
+        <div class="section">
+            <h2>🧹 Pulizia Avanzata</h2>
+            <div class="description">
+                Rimuove dati obsoleti e inconsistenti. <strong>⚠️ Operazioni irreversibili!</strong> 
+                Usa solo dopo aver eseguito un backup del database.
+            </div>
+            
+            <a href="{{ url_for('admin_pulisci_record_orfani') }}" 
+               class="btn btn-danger"
+               onclick="return confirm('⚠️ ATTENZIONE: Questa operazione eliminerà dal database tutti i record per file che non esistono più sul disco.\n\nSei sicuro di voler procedere? Questa operazione è irreversibile!')">
+                <span class="icon">🗑️</span>Rimuovi Record Orfani
+            </a>
+        </div>
+        
+        <!-- Risultati -->
+        {% if session.get('file_non_trovati') %}
+        <div class="section">
+            <h2>❌ File Non Trovati</h2>
+            <div class="description">
+                I seguenti file sono registrati nel database ma non esistono fisicamente:
+            </div>
+            <div class="results">
+                {% for file in session.file_non_trovati %}
+                <div><strong>ID {{ file.id }}:</strong> {{ file.titolo }} → <code>{{ file.nome_file }}</code></div>
+                {% endfor %}
+            </div>
+            <div style="margin-top: 10px;">
+                <span class="status-warning">{{ session.file_non_trovati|length }} file mancanti</span>
+            </div>
+        </div>
+        {% endif %}
+        
+        {% if session.get('verifica_risultati') %}
+        <div class="section">
+            <h2>📊 Risultati Verifica Integrità</h2>
+            
+            {% if session.verifica_risultati.mancanti %}
+            <h3>❌ File nel Database ma Mancanti Fisicamente (primi 20):</h3>
+            <div class="results">
+                {% for file in session.verifica_risultati.mancanti %}
+                <div><code>{{ file }}</code></div>
+                {% endfor %}
+            </div>
+            <span class="status-error">{{ session.verifica_risultati.mancanti|length }} file mancanti</span>
+            {% endif %}
+            
+            {% if session.verifica_risultati.orfani %}
+            <h3>📂 File Fisici non nel Database - Orfani (primi 20):</h3>
+            <div class="results">
+                {% for file in session.verifica_risultati.orfani %}
+                <div><code>{{ file }}</code></div>
+                {% endfor %}
+            </div>
+            <span class="status-warning">{{ session.verifica_risultati.orfani|length }} file orfani</span>
+            {% endif %}
+            
+            {% if not session.verifica_risultati.mancanti and not session.verifica_risultati.orfani %}
+            <div class="alert alert-info">
+                <strong>✅ Sistema in perfetto stato!</strong> Tutti i file del database corrispondono ai file fisici.
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+        
+        <!-- Informazioni -->
+        <div class="section">
+            <h2>ℹ️ Guida alle Operazioni</h2>
+            <div class="description">
+                <strong>🔍 Schema Database:</strong> Mostra la struttura della tabella foto e alcuni record di esempio.<br>
+                <strong>🔍 Verifica Integrità:</strong> Confronta database con file fisici per trovare discrepanze.<br>
+                <strong>🔬 Debug Foto:</strong> Analizza una foto specifica per problemi di ID o riferimenti.<br><br>
+                
+                <strong>🔧 Riparazione Automatica:</strong> Esegue normalizzazione + verifica + aggiornamento CSV (consigliato).<br>
+                <strong>⚙️ Solo Normalizzazione:</strong> Corregge solo i percorsi dei file e le inconsistenze degli ID.<br><br>
+                
+                <strong>🗑️ Rimuovi Record Orfani:</strong> Elimina dal database i record per file non più esistenti (irreversibile).
+            </div>
+            
+            <div class="alert alert-info">
+                <strong>💡 Procedura consigliata:</strong><br>
+                1. Fai un backup del database<br>
+                2. Esegui "Verifica Integrità" per identificare problemi<br>
+                3. Usa "Riparazione Automatica" per risolvere la maggior parte dei problemi<br>
+                4. Se necessario, usa "Rimuovi Record Orfani" per la pulizia finale
+            </div>
+        </div>
+        
+        <div class="back-link">
+            <a href="{{ url_for('index') }}" class="btn">
+                <span class="icon">🏠</span>Torna alla Galleria
+            </a>
+        </div>
+    </div>
+    
+    <!-- JavaScript per debug foto -->
+    <script>
+        function debugPhoto() {
+            const photoId = document.getElementById('photoId').value.trim();
+            if (!photoId) {
+                alert('Inserisci un ID foto valido');
+                return;
+            }
+            
+            if (!/^\d+$/.test(photoId)) {
+                alert('L\'ID deve essere un numero');
+                return;
+            }
+            
+            window.location.href = '{{ url_for("debug_photo", photo_id="PLACEHOLDER") }}'.replace('PLACEHOLDER', photoId);
+        }
+        
+        // Permetti di premere Enter nel campo input
+        document.getElementById('photoId').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                debugPhoto();
+            }
+        });
+    </script>
+    
+    <!-- Pulizia sessione -->
+    {% set _ = session.pop('file_non_trovati', None) %}
+    {% set _ = session.pop('verifica_risultati', None) %}
+</body>
+</html>

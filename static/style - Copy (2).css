@@ -456,10 +456,3 @@ textarea {
         font-size: 1.5rem;
     }
 }
-
-
-/* Zoom dinamico immagine popup */
-#img01 {
-    transition: transform 0.2s ease;
-    touch-action: none;
-}

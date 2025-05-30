@@ -1,0 +1,96 @@
+Folder PATH listing for volume Windows 2022
+Volume serial number is 0000021F 3EFD:06B3
+C:\USERS\ADMINISTRATOR\DESKTOP\FOTOAPPFUSIONECLAUDE
+¦   albero_senza_foto.txt
+¦   app.py
+¦   dati_foto.csv
+¦   log_attivita.csv
+¦   photo_sharing.py
+¦   test_popup_condivisione.html
+¦   test_token.py
+¦   test_token_layout.html
+¦   utenti.csv
+¦   
++---CSV
++---data
+¦       token_condivisione.csv
+¦       
++---fotoapp_fusione_condivisione_token
+¦   ¦   app.py
+¦   ¦   photo_sharing.py
+¦   ¦   
+¦   +---data
+¦   ¦       token_condivisione.csv
+¦   ¦       
+¦   +---static
+¦   ¦   +---js
+¦   ¦           sharing_manager.js
+¦   ¦           
+¦   +---templates
+¦           categoria.html
+¦           condividi_token.html
+¦           
++---static
+¦   ¦   style - Copy.css
+¦   ¦   style.css
+¦   ¦   
+¦   +---foto
+¦   ¦   +---Bruno
+¦   ¦   ¦       149Laghetto di Monet 150x80.tif
+¦   ¦   ¦       160Il mio giardino 50x60.tif
+¦   ¦   ¦       
+¦   ¦   +---Daniele
+¦   ¦   ¦       
+¦   ¦   +---Maglie Toro
+¦   ¦   ¦   ¦   
+¦   ¦   ¦   +---Giocate
+¦   ¦   ¦   ¦       
+¦   ¦   ¦   +---Maglie Giocate
+¦   ¦   ¦   ¦       
+¦   ¦   ¦   +---Riedizioni
+¦   ¦   ¦           
+¦   ¦   +---max
+¦   ¦   ¦       
+¦   ¦   +---TORO
+¦   ¦           
+¦   +---immagini
+¦   ¦   +---Bruno
+¦   ¦   ¦       149Laghetto di Monet 150x80.tif
+¦   ¦   ¦       160Il mio giardino 50x60.tif
+¦   ¦   ¦       
+¦   ¦   +---generale
+¦   ¦   ¦       
+¦   ¦   +---Maglie
+¦   ¦   ¦       
+¦   ¦   +---TORO
+¦   ¦       ¦   
+¦   ¦       +---Maglie TORO
+¦   ¦               
+¦   +---js
+¦           sharing_manager.js
+¦           
++---templates
+¦       aggiungi.html
+¦       categoria.html
+¦       condividi_diretto.html
+¦       condividi_foto.html
+¦       condividi_migliore.html
+¦       condividi_multiple.html
+¦       condividi_token.html
+¦       elimina.html
+¦       elimina_2025-05-24.txt
+¦       elimina_categoria.html
+¦       elimina_categoria_2025-05-24.txt
+¦       gestione_utenti.html
+¦       index - Copy.html
+¦       index.html
+¦       login.html
+¦       modifica.html
+¦       report_attivita.html
+¦       ricerca.html
+¦       sharing_templates.html
+¦       upload_massivo.html
+¦       
++---__pycache__
+        photo_sharing.cpython-313.pyc
+        

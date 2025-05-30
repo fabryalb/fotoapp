@@ -1,12 +1,11 @@
 <!DOCTYPE html>
-
 <html lang="it">
 <head>
-<meta charset="utf-8"/>
-<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>Categoria: {{ nome }}</title>
-<link href="{{ url_for('static', filename='style.css') }}" rel="stylesheet"/>
-<style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Categoria: {{ nome }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
         /* Stili per le sottocategorie come cartelle */
         .subcategories-section {
             margin-bottom: 30px;
@@ -352,43 +351,44 @@
     </style>
 </head>
 <body>
-<header>
-<h1>Categoria: {{ nome }}</h1>
-<nav>
-<a class="btn" href="{{ url_for('index') }}">⬅️ Torna alle categorie</a>
-</nav>
-</header>
-<main>
+    <header>
+        <h1>Categoria: {{ nome }}</h1>
+        <nav>
+            <a href="{{ url_for('index') }}" class="btn">⬅️ Torna alle categorie</a>
+        </nav>
+    </header>
+
+    <main>
 
         {% if session.get('username') and utente_ha_permesso(nome_categoria, 'aggiungi') %}
             <div style="margin-bottom: 20px;">
-<a class="btn" href="{{ url_for('aggiungi', categoria=nome_categoria) }}">➕ Aggiungi foto</a>
-</div>
+                <a href="{{ url_for('aggiungi', categoria=nome_categoria) }}" class="btn">➕ Aggiungi foto</a>
+            </div>
         {% endif %}
     
         <!-- Sottocategorie come cartelle (solo se esistono) -->
         {% if sottocategorie %}
         <div class="subcategories-section">
-<h2 class="subcategories-title">📁 Sottocategorie</h2>
-<div class="subcategories-grid">
+            <h2 class="subcategories-title">📁 Sottocategorie</h2>
+            <div class="subcategories-grid">
                 {% for sottocategoria in sottocategorie %}
-                    <a class="subcategory-folder" href="{{ url_for('mostra_categoria', nome=sottocategoria.categoria_completa) }}">
-<div class="folder-thumbnail">
+                    <a href="{{ url_for('mostra_categoria', nome=sottocategoria.categoria_completa) }}" class="subcategory-folder">
+                        <div class="folder-thumbnail">
                             {% if sottocategoria.foto_copertina %}
-                                <img alt="{{ sottocategoria.foto_copertina.titolo }}" src="{{ url_for('static', filename=sottocategoria.foto_copertina.nome_file) }}"/>
+                                <img src="{{ url_for('static', filename=sottocategoria.foto_copertina.nome_file) }}" alt="{{ sottocategoria.foto_copertina.titolo }}">
                             {% endif %}
                             <div class="folder-overlay">
                                 📂
                             </div>
-</div>
-<div class="folder-info">
-<div class="folder-name">{{ sottocategoria.nome_breve }}</div>
-<div class="folder-count">{{ sottocategoria.num_foto }} foto</div>
-</div>
-</a>
+                        </div>
+                        <div class="folder-info">
+                            <div class="folder-name">{{ sottocategoria.nome_breve }}</div>
+                            <div class="folder-count">{{ sottocategoria.num_foto }} foto</div>
+                        </div>
+                    </a>
                 {% endfor %}
             </div>
-</div>
+        </div>
         {% endif %}
 
         <!-- Sezione foto dirette (solo se ci sono foto in questa categoria) -->
@@ -399,89 +399,95 @@
             {% endif %}
             
             <div class="sorting-controls">
-<span>Ordina per:</span>
-<a class="sort-btn {% if sort_by == 'default' or sort_by is none %}active{% endif %}" href="{{ url_for('mostra_categoria', nome=nome) }}">Predefinito</a>
-<a class="sort-btn {% if sort_by == 'data' %}active{% endif %}" href="{{ url_for('mostra_categoria', nome=nome, sort='data') }}">Data (più recenti)</a>
-<a class="sort-btn {% if sort_by == 'inserimento' %}active{% endif %}" href="{{ url_for('mostra_categoria', nome=nome, sort='inserimento') }}">Ordine di inserimento</a>
-<a class="sort-btn {% if sort_by == 'nome' %}active{% endif %}" href="{{ url_for('mostra_categoria', nome=nome, sort='nome') }}">Nome file</a>
-<a class="sort-btn {% if sort_by == 'exif' %}active{% endif %}" href="{{ url_for('mostra_categoria', nome=nome, sort='exif') }}">Data EXIF</a>
-</div>
-<!-- Barra degli strumenti per la selezione multipla -->
-<div class="multi-selection-toolbar" id="multiSelectionToolbar" style="display: none;">
-<div class="selection-info">
-<span id="selectionCount">0</span> foto selezionate
+                <span>Ordina per:</span>
+                <a href="{{ url_for('mostra_categoria', nome=nome) }}" class="sort-btn {% if sort_by == 'default' or sort_by is none %}active{% endif %}">Predefinito</a>
+                <a href="{{ url_for('mostra_categoria', nome=nome, sort='data') }}" class="sort-btn {% if sort_by == 'data' %}active{% endif %}">Data (più recenti)</a>
+                <a href="{{ url_for('mostra_categoria', nome=nome, sort='inserimento') }}" class="sort-btn {% if sort_by == 'inserimento' %}active{% endif %}">Ordine di inserimento</a>
+                <a href="{{ url_for('mostra_categoria', nome=nome, sort='nome') }}" class="sort-btn {% if sort_by == 'nome' %}active{% endif %}">Nome file</a>
+                <a href="{{ url_for('mostra_categoria', nome=nome, sort='exif') }}" class="sort-btn {% if sort_by == 'exif' %}active{% endif %}">Data EXIF</a>
+            </div>
+
+            <!-- Barra degli strumenti per la selezione multipla -->
+            <div class="multi-selection-toolbar" id="multiSelectionToolbar" style="display: none;">
+                <div class="selection-info">
+                    <span id="selectionCount">0</span> foto selezionate
                 </div>
-<div class="selection-actions">
-<button class="btn" id="clearSelectionBtn">Annulla</button>
-<button class="btn" id="shareSelectedBtn">Condividi selezionate</button>
-</div>
-</div>
-<div class="galleria photo-grid">
+                <div class="selection-actions">
+                    <button id="clearSelectionBtn" class="btn">Annulla</button>
+                    <button id="shareSelectedBtn" class="btn">Condividi selezionate</button>
+                </div>
+            </div>
+            
+            <div class="galleria photo-grid">
                 {% for f in foto %}
                     <div class="foto photo-card">
                         {% if f[6] == "1" %}<div class="badge-copertina">📌 Copertina</div>{% endif %}
                         <!-- Il selettore viene aggiunto qui tramite JavaScript al caricamento della pagina -->
-<img alt="{{ f[1] }}" onclick="showModal(this)" src="{{ url_for('static', filename=f[4]) }}"/>
-<div class="photo-info">
-<strong>{{ f[1] }}</strong><br/>
-<em>{{ f[2] }}</em><br/>
-<small class="date">{{ f[3] }}</small><br/>
-</div>
-<div class="actions">
+                        <img src="{{ url_for('static', filename=f[4]) }}" alt="{{ f[1] }}" onclick="showModal(this)">
+                        <div class="photo-info">
+                            <strong>{{ f[1] }}</strong><br>
+                            <em>{{ f[2] }}</em><br>
+                            <small class="date">{{ f[3] }}</small><br>
+                        </div>
+                        <div class="actions">
                             {% if session['ruolo'] == 'admin' or (session['ruolo'] == 'utente' and 'modifica' in session['permessi'][nome]) %}
-                                <a class="btn" href="{{ url_for('modifica', id_foto=f[0]) }}">✏️ Modifica</a>
-<a class="btn delete" href="{{ url_for('elimina', id_foto=f[0]) }}">🗑️ Elimina</a>
-<a class="btn" href="{{ url_for('imposta_copertina', id_foto=f[0]) }}">📌 Copertina</a>
-<a class="btn" href="{{ url_for('condividi_migliore', id_foto=f[0]) }}" target="_blank">🖼️ Condividi</a>
+                                <a href="{{ url_for('modifica', id_foto=f[0]) }}" class="btn">✏️ Modifica</a>
+                                <a href="{{ url_for('elimina', id_foto=f[0]) }}" class="btn delete">🗑️ Elimina</a>
+                                <a href="{{ url_for('imposta_copertina', id_foto=f[0]) }}" class="btn">📌 Copertina</a>
+                                <a class="btn" href="{{ url_for('condividi_migliore', id_foto=f[0]) }}" target="_blank">🖼️ Condividi</a>
                             {% endif %}
                         </div>
-</div>
+                    </div>
                 {% endfor %}
             </div>
-</div>
+        </div>
         {% endif %}
 
         <!-- Messaggio se non ci sono né foto né sottocategorie -->
         {% if not foto and not sottocategorie %}
         <div class="empty-gallery">
-<p>Questa categoria è vuota.</p>
+            <p>Questa categoria è vuota.</p>
             {% if session.username %}
-                <a class="btn" href="{{ url_for('aggiungi') }}">Aggiungi la prima foto</a>
+                <a href="{{ url_for('aggiungi') }}" class="btn">Aggiungi la prima foto</a>
             {% endif %}
         </div>
         {% endif %}
     <!-- Popup moderno per condivisione -->
 <div id="popup-link" style="display:none; text-align:center; margin: 20px auto; padding: 15px; border: 1px solid #750000; background: #fff3f3; max-width: 600px; border-radius: 8px;">
-<p style="font-size: 1rem; margin-bottom: 10px;">✅ Link di condivisione creato:</p>
-<a href="#" id="link-generato" style="word-break: break-all; color: #750000; font-weight: bold;" target="_blank"></a><br/><br/>
-<div style="display: flex; flex-wrap: wrap; gap: 10px; justify-content: center;">
-<button class="btn" onclick="copyLink()">📋 Copia</button>
-<a class="btn" id="waShare" target="_blank">🟢 WhatsApp</a>
-<a class="btn" id="tgShare" target="_blank">📢 Telegram</a>
-<a class="btn" id="emailShare" target="_blank">✉️ Email</a>
-</div>
+  <p style="font-size: 1rem; margin-bottom: 10px;">✅ Link di condivisione creato:</p>
+  <a id="link-generato" href="#" target="_blank" style="word-break: break-all; color: #750000; font-weight: bold;"></a><br><br>
+  <div style="display: flex; flex-wrap: wrap; gap: 10px; justify-content: center;">
+    <button onclick="copyLink()" class="btn">📋 Copia</button>
+    <a id="waShare" class="btn" target="_blank">🟢 WhatsApp</a>
+    <a id="tgShare" class="btn" target="_blank">📢 Telegram</a>
+    <a id="emailShare" class="btn" target="_blank">✉️ Email</a>
+  </div>
 </div>
 </main>
-<!-- Popup ingrandimento immagine -->
-<div class="overlay" id="myModal">
-<div class="overlay-content">
-<span class="close-btn" onclick="closeModal()">×</span>
-<span class="prev" onclick="prevImage()">❮</span>
-<img id="img01"/>
-<div class="metadata" id="metadata"></div>
-<div id="popup-share" style="margin-top: 10px; display: flex; gap: 10px; justify-content: center;">
-<a class="btn" id="directShare" target="_blank">🖼️ Condividi</a>
-<a class="btn" id="copyShare" onclick="copyToClipboard()">📋 Copia link</a>
-</div>
-<span class="next" onclick="nextImage()">❯</span>
-</div>
-</div>
-<!-- Pulsante torna su -->
-<button id="scrollTopBtn" onclick="scrollToTop()" title="Torna su">↑</button>
-<footer>
-<p>© 2025 Powered by Fabry FVCG</p>
-</footer>
-<script>
+
+    <!-- Popup ingrandimento immagine -->
+    <div id="myModal" class="overlay">
+        <div class="overlay-content">
+            <span class="close-btn" onclick="closeModal()">&times;</span>
+            <span class="prev" onclick="prevImage()">&#10094;</span>
+            <img id="img01">
+            <div id="metadata" class="metadata"></div>
+            <div id="popup-share" style="margin-top: 10px; display: flex; gap: 10px; justify-content: center;">
+                <a id="directShare" class="btn" target="_blank">🖼️ Condividi</a>
+                <a id="copyShare" class="btn" onclick="copyToClipboard()">📋 Copia link</a>
+            </div>
+            <span class="next" onclick="nextImage()">&#10095;</span>
+        </div>
+    </div>
+
+    <!-- Pulsante torna su -->
+    <button onclick="scrollToTop()" id="scrollTopBtn" title="Torna su">↑</button>
+
+    <footer>
+        <p>&copy; 2025 Powered by Fabry FVCG</p>
+    </footer>
+
+    <script>
         let currentIndex = -1;
         let images = [];
         
@@ -764,44 +770,6 @@ function copyLink() {
     }).catch(() => {
         alert("Impossibile copiare negli appunti");
     });
-}
-
-
-// Zoom dinamico immagine nel popup
-let scale = 1;
-const modalImg = document.getElementById("img01");
-
-modalImg.addEventListener("wheel", function(e) {
-    e.preventDefault();
-    const delta = e.deltaY > 0 ? -0.1 : 0.1;
-    scale = Math.min(Math.max(1, scale + delta), 5);
-    modalImg.style.transform = `scale(${scale})`;
-}, { passive: false });
-
-let initialDistance = null;
-modalImg.addEventListener("touchstart", function(e) {
-    if (e.touches.length === 2) {
-        initialDistance = getDistance(e.touches[0], e.touches[1]);
-    }
-}, { passive: true });
-
-modalImg.addEventListener("touchmove", function(e) {
-    if (e.touches.length === 2 && initialDistance) {
-        const newDistance = getDistance(e.touches[0], e.touches[1]);
-        const pinchScale = newDistance / initialDistance;
-        scale = Math.min(Math.max(1, pinchScale), 5);
-        modalImg.style.transform = `scale(${scale})`;
-    }
-}, { passive: true });
-
-modalImg.addEventListener("touchend", function() {
-    initialDistance = null;
-}, { passive: true });
-
-function getDistance(touch1, touch2) {
-    const dx = touch1.clientX - touch2.clientX;
-    const dy = touch1.clientY - touch2.clientY;
-    return Math.hypot(dx, dy);
 }
 </script>
 </body>

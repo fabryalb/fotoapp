@@ -133,6 +133,7 @@
                     <a href="{{ url_for('upload_massivo') }}" class="btn">Upload Massivo</a>
                 {% endif %}
                 {% if session.ruolo == "admin" %}
+                    <a href="{{ url_for('admin_manutenzione') }}" class="btn">🔧 Manutenzione</a>
                     <a href="{{ url_for('gestione_utenti') }}" class="btn">Gestione utenti</a>
                     <a href="{{ url_for('report_attivita') }}" class="btn">📊 Report attività</a>
                 {% endif %}
