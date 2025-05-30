@@ -1655,4 +1655,4 @@ if __name__ == '__main__':
         try:
             input("✅ Server avviato. Premi INVIO per chiudere...")
         except EOFError:
-            pass  # Protegge l'esecuzione anche se l'input fallisce
+            pass  # Ignora l'errore su sistemi non interattivi
