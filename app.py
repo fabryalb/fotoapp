@@ -1643,16 +1643,9 @@ def admin_pulisci_record_orfani():
 
 if __name__ == '__main__':
     if os.environ.get("RENDER") == "TRUE":
-        # Porta fissa per Render
+        # Avvio per Render con porta 5050
         app.run(host='0.0.0.0', port=5050)
     else:
-        import threading
-        def avvia_flask():
-            app.run(debug=True, host='0.0.0.0', port=5000, use_reloader=False)
-
-        threading.Thread(target=avvia_flask, daemon=True).start()
-        try:
-            input("✅ Server avviato. Premi INVIO per chiudere...")
-        except EOFError:
-            pass
+        # Avvio locale (VPS o PC)
+        app.run(debug=True, host='0.0.0.0', port=5000, use_reloader=False)
 
