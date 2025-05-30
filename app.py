@@ -1643,16 +1643,16 @@ def admin_pulisci_record_orfani():
 
 if __name__ == '__main__':
     if os.environ.get("RENDER") == "TRUE":
-        # Esecuzione su Render: nessun input, nessun threading
-        app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 10000)))
+        # Porta fissa per Render
+        app.run(host='0.0.0.0', port=5050)
     else:
-        # Esecuzione locale (VPS o PC)
         import threading
         def avvia_flask():
             app.run(debug=True, host='0.0.0.0', port=5000, use_reloader=False)
-        
+
         threading.Thread(target=avvia_flask, daemon=True).start()
         try:
             input("✅ Server avviato. Premi INVIO per chiudere...")
         except EOFError:
-            pass  # Ignora l'errore su sistemi non interattivi
+            pass
+
