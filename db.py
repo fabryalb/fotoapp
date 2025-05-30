@@ -1,14 +1,20 @@
-import pyodbc
+from sqlalchemy import create_engine, text
+from sqlalchemy.engine import URL
 from datetime import datetime
 import os
 
 def get_connection():
-    return pyodbc.connect(
-        "DRIVER={ODBC Driver 17 for SQL Server};"
-        "SERVER=localhost\\SQLEXPRESS;"
-        "DATABASE=galleria;"
-        "Trusted_Connection=yes;"
+    url = URL.create(
+        "mssql+pytds",
+        username="sa",
+        password="Sanmames1",
+        host="136.144.220.169",  # IP pubblico della tua VPS
+        port=1433,
+        database="galleria"
     )
+    engine = create_engine(url)
+    return engine.connect()
+
 
 def save_utenti(lista_utenti):
     with get_connection() as conn:
