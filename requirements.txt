@@ -2,6 +2,6 @@ flask
 pillow
 gunicorn
 sqlalchemy
-pytds
+python-tds
 python-dotenv
 pandas
