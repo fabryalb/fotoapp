@@ -1,19 +1,18 @@
-from sqlalchemy import create_engine, text
+from sqlalchemy import create_engine
 from sqlalchemy.engine import URL
-from datetime import datetime
-import os
 
 def get_connection():
     url = URL.create(
         "mssql+pytds",
         username="sa",
         password="Sanmames1",
-        host="136.144.220.169",  # IP pubblico della tua VPS
-        port=1433,
+        host="136.144.220.169",
+        port=5050,  # <-- CORRETTO!
         database="galleria"
     )
     engine = create_engine(url)
     return engine.connect()
+
 
 
 def save_utenti(lista_utenti):
